@@ -12,7 +12,7 @@ from dateutil import parser as dtparser
 from dateutil.tz import gettz
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, send_file,
-    session
+    session, make_response
 )
 from unidecode import unidecode
 import pandas as pd
@@ -232,16 +232,17 @@ def reset():
         action = request.form.get("action")
         if action == "yes":
             session.clear()
+
             resp = make_response(redirect(url_for("index")))
-            resp.set_cookie(key=app.session_cookie_name, value="", expires=0)
-            resp.set_cookie("ui_theme", "", expires=0)
+            # delete only the Flask session cookie
+            session_cookie = app.config.get("SESSION_COOKIE_NAME", "session")
+            resp.delete_cookie(session_cookie, path='/', samesite='Lax')
+
             flash("Session réinitialisée.")
             return resp
         else:
-            # "no" => retour à l'accueil sans rien faire
             return redirect(url_for("index"))
 
-    # Si GET, on affiche la page de confirmation
     return render_template("reset_confirm.html")
 
 
