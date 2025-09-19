@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Simulation – Réseau social</title>
+    <title>Simulation – Réseaux sociaux</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -13,15 +13,7 @@
       .tw-header { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(6px); background: rgba(0,0,0,.4); border-bottom: 1px solid var(--cc-border); }
 
       /* layout */
-      .col-left   { max-width: 280px; }
-      .col-center { max-width: 720px; border-left: 1px solid var(--cc-border); border-right: 1px solid var(--cc-border); }
-      .col-right  { max-width: 380px; }
-      @media (max-width: 1199.98px) { .col-left{ display:none; } .col-right{ display:none; } .col-center{ border-left:none; border-right:none; } }
-
-      .left-rail .nav-link { color:#fff; border-radius:999px; padding:.6rem 1rem; font-weight:600; }
-      .left-rail .nav-link:hover { background: rgba(255,255,255,.06); }
-      .left-rail .nav-link .bi { font-size:1.25rem; width:1.75rem; }
-
+      .col-center { max-width: 750px; border-left: 1px solid var(--cc-border); border-right: 1px solid var(--cc-border); }
       .right-rail { position: sticky; top: 64px; }
       .right-card { background: rgba(255,255,255,.03); border: 1px solid var(--cc-border); border-radius: 1rem; }
 
@@ -31,6 +23,7 @@
       .avatar { width: 48px; height: 48px; border-radius: 50%; display:inline-flex; align-items:center; justify-content:center; font-weight:700; }
       .handle, .meta { color: var(--cc-muted); }
       .tweet-text { white-space: pre-wrap; font-size: 1.05rem; }
+      .tweet-text img{ max-width:100%; height:auto; border-radius:.75rem; margin-top:.5rem; border:1px solid var(--cc-border); }
       .eng-row .eng-btn { cursor: default; user-select: none; }
       .small-muted { color: var(--cc-muted); }
 
@@ -40,6 +33,13 @@
       .trend .count { color: var(--cc-muted); font-size:.85rem; }
       .trend .tag { font-weight:600; }
       .trend.active { outline: 1px solid rgba(13,110,253,.35); background: rgba(13,110,253,.1); }
+
+      /* mobile toggle */
+      .mobile-trends-toggle { display:none; }
+      @media (max-width: 991.98px) { /* < lg */
+        .col-center { border-left: none; border-right: none; }
+        .mobile-trends-toggle { display:block; }
+      }
     </style>
   </head>
   <body>
@@ -48,7 +48,10 @@
       <div class="container-fluid">
         <div class="d-flex align-items-center justify-content-between px-3 py-2">
           <div class="fw-bold">Réseaux sociaux</div>
-          <div class="d-flex align-items-center gap-3">
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-light mobile-trends-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#trendsCollapse" aria-expanded="false" aria-controls="trendsCollapse">
+              <i class="bi bi-hash"></i> Tendances
+            </button>
             <div class="small-muted" id="clock"></div>
           </div>
         </div>
@@ -58,32 +61,24 @@
     <!-- Main layout -->
     <div class="container-fluid">
       <div class="row justify-content-center g-0">
-        <!-- left nav -->
-        <aside class="col-2 col-left px-3 d-none d-xl-block">
-          <div class="left-rail pt-3">
-            <a class="nav-link d-flex align-items-center gap-2 mb-1" href="#"><i class="bi bi-house"></i><span>Accueil</span></a>
-            <a class="nav-link d-flex align-items-center gap-2 mb-1" href="#"><i class="bi bi-hash"></i><span>Tendances</span></a>
-            <a class="nav-link d-flex align-items-center gap-2 mb-1" href="{{ url_for('messagerie') }}"><i class="bi bi-envelope"></i><span>Messages</span></a>
-            <a class="nav-link d-flex align-items-center gap-2 mb-1" href="{{ url_for('admin') }}"><i class="bi bi-gear"></i><span>Administration</span></a>
-          </div>
-        </aside>
-
         <!-- center feed -->
-        <div class="col-12 col-xl-6 col-center">
+        <div class="col-12 col-lg-7 col-center">
           <main id="feed"></main>
           <div class="text-center py-5 small-muted" id="idle">En attente des prochains tweets…</div>
         </div>
 
         <!-- right rail: trends -->
-        <aside class="col-12 col-xl-4 col-right px-3 d-none d-xl-block">
-          <div class="right-rail pt-3">
-            <div class="right-card p-3 mb-3">
-              <div class="d-flex align-items-center justify-content-between mb-2">
-                <h2 class="h6 m-0"><i class="bi bi-hash me-2"></i>Tendances</h2>
-                <span class="small-muted" id="trend-count"></span>
+        <aside class="col-12 col-lg-4 px-3 px-lg-4">
+          <div id="trendsCollapse" class="collapse d-lg-block">
+            <div class="right-rail pt-3">
+              <div class="right-card p-3 mb-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <h2 class="h6 m-0"><i class="bi bi-hash me-2"></i>Tendances</h2>
+                  <span class="small-muted" id="trend-count"></span>
+                </div>
+                <div id="trends"></div>
+                <div class="small-muted mt-2">Les hashtags se mettent à jour en temps réel.</div>
               </div>
-              <div id="trends"></div>
-              <div class="small-muted mt-2">Les hashtags se mettent à jour en temps réel.</div>
             </div>
           </div>
         </aside>
@@ -92,22 +87,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-
-    function renderStimuliText(text){
-      if (!text) return '';
-      // escape base HTML first
-      let safe = escapeHtml(text);
-
-      // replace [img filename] with <img src="/statics/images/filename">
-      safe = safe.replace(/\[img\s+([\w.\-]+)\]/gi, (match, filename) => {
-        return `<img src="/statics/images/${filename}" class="img-fluid rounded my-2" alt="image">`;
-      });
-
-      return safe;
-    }
-
-
-
       const feed = document.getElementById('feed');
       const idle = document.getElementById('idle');
       const trendsList = document.getElementById('trends');
@@ -143,27 +122,34 @@
       const clamp = (n,min,max)=>Math.max(min, Math.min(max,n));
       const jitterMs = (min,max)=>Math.floor(min + Math.random()*(max-min));
 
-      // ----- hashtags / trends (safe, no extra endpoints) -----
+      // ----- hashtags / trends -----
       const hashtagMap = new Map(); // tag(lower) -> count
       let activeTag = null;
 
+      // extract hashtags from text (Unicode letters/digits/_), case-insensitive
       function extractHashtags(text){
         if (!text) return [];
         const re = /(^|[\s.,;:!?()\[\]{}"'])#([\p{L}\p{N}_]{1,50})/giu;
-        const out = []; let m;
-        while ((m = re.exec(text)) !== null){ out.push(m[2].toLowerCase()); }
+        const out = [];
+        let m;
+        while ((m = re.exec(text)) !== null){
+          out.push(m[2].toLowerCase());
+        }
         return out;
       }
 
       function updateTrendsUI(){
-        if (!trendsList || !trendCount) return;
-        const arr = Array.from(hashtagMap.entries()).sort((a,b)=> b[1]-a[1]).slice(0,10);
+        const arr = Array.from(hashtagMap.entries())
+          .sort((a,b)=> b[1]-a[1]) // by count
+          .slice(0,10);
+
         trendsList.innerHTML = '';
         for (const [tag, count] of arr){
           const div = document.createElement('div');
           div.className = 'trend' + (activeTag === tag ? ' active' : '');
           div.innerHTML = `<span class="tag">#${escapeHtml(tag)}</span><span class="count">${count}</span>`;
           div.addEventListener('click', ()=>{
+            // toggle filter
             activeTag = (activeTag === tag) ? null : tag;
             filterFeedByHashtag(activeTag);
             updateTrendsUI();
@@ -188,20 +174,35 @@
           cards.forEach(c => c.style.display = '');
           return;
         }
-        const needle = `#${tag}`;
+        const normalized = `#${tag}`;
         cards.forEach(c=>{
           const text = c.querySelector('.tweet-text')?.textContent?.toLowerCase() || '';
-          c.style.display = text.includes(needle) ? '' : 'none';
+          c.style.display = text.includes(normalized) ? '' : 'none';
         });
       }
 
-      // ----- tweet card + dynamic engagement (same logic you had) -----
+      // ----- convert [img filename.ext] to <img src="/statics/images/filename.ext"> -----
+      function replaceImgShortcode(text){
+        if (!text) return '';
+        // matches [img name.png] / [img photo.jpg] / [img banner.gif]
+        return text.replace(/\[img\s+([^\]\s]+\.(?:png|jpg|jpeg|gif))\]/gi, (m, fname)=>{
+          const safe = fname.replace(/[^a-zA-Z0-9._-]/g,'');
+          return `<img src="/statics/images/${safe}" alt="">`;
+        });
+      }
+
+      // ----- tweet card + dynamic engagement -----
       const timers = new Map(); // tid -> intervalId
 
       function tweetCard(t){
         const initials = initialsOf(t.emetteur);
         const handle = makeHandle(t.emetteur);
         const when = new Date(t.at_ms);
+
+        // prepare tweet HTML (with image shortcode replacement)
+        const tweetHtml = replaceImgShortcode(escapeHtml(t.texte))
+                          // allow the <img> we just created (escapeHtml already ran)
+                          .replace(/&lt;img /g,'<img ').replace(/&gt;/g,'>');
 
         const card = document.createElement('article');
         card.className = 'tweet-card';
@@ -215,7 +216,7 @@
                 <span class="handle">${handle}</span>
                 <span class="meta">· ${when.toLocaleString('fr-FR',{ timeZone:'Europe/Paris' })}</span>
               </div>
-              <div class="tweet-text mt-2">${renderStimuliText(t.texte)}</div>
+              <div class="tweet-text mt-2">${tweetHtml}</div>
 
               <div class="eng-row d-flex align-items-center gap-4 mt-3 meta">
                 <span class="eng-btn" title="Répondre"><i class="bi bi-chat"></i></span>
@@ -231,7 +232,10 @@
               </div>
             </div>
           </div>`;
+
+        // seed + animation
         seedAndAnimate(card, t);
+        // register hashtags
         registerHashtagsFromTweet(t);
         return card;
       }
@@ -243,6 +247,7 @@
         if (activeTag) filterFeedByHashtag(activeTag);
       }
 
+      // Seed counters based on age and pseudo-popularity; animate with decreasing probability.
       function seedAndAnimate(card, t){
         const likeEl = card.querySelector('.like-count');
         const rtEl   = card.querySelector('.rt-count');
@@ -251,16 +256,19 @@
         const pop = (h % 7) + 1; // 1..7
         const baseLike = Math.floor(Math.log10(ageSec + 10) * pop);
         const baseRt   = Math.floor(baseLike * (0.25 + (h % 3) * 0.1));
+
         likeEl.textContent = String(Math.max(0, baseLike));
         rtEl.textContent   = String(Math.max(0, baseRt));
 
         const tid = card.dataset.tid;
         startTimer(tid, () => {
-          if (document.hidden) return;
+          if (document.hidden) return; // pause when tab not visible
           const curLike = parseInt(likeEl.textContent || '0', 10);
           const curRt   = parseInt(rtEl.textContent   || '0', 10);
+
           const pLike = clamp(0.28 / (1 + curLike / 15), 0.01, 0.35);
           if (Math.random() < pLike) likeEl.textContent = String(curLike + 1);
+
           const pRt = clamp(pLike * 0.35, 0.005, 0.12);
           if (Math.random() < pRt) rtEl.textContent = String(curRt + 1);
         }, jitterMs(1400, 3800));
@@ -268,19 +276,31 @@
 
       function startTimer(id, fn, interval){ stopTimer(id); const x = setInterval(fn, interval); timers.set(id, x); }
       function stopTimer(id){ const x = timers.get(id); if (x){ clearInterval(x); timers.delete(id); } }
+
+      // Clean timers if cards are removed
       const observer = new MutationObserver(() => {
         const live = new Set([...feed.querySelectorAll('.tweet-card')].map(c => c.dataset.tid));
         for (const tid of [...timers.keys()]) if (!live.has(tid)) stopTimer(tid);
       });
       observer.observe(feed, { childList: true });
 
-      // ----- SSE (unchanged; still replays past tweets if server does) -----
+      // ----- SSE -----
       const evt = new EventSource("{{ url_for('stream_tweets') }}");
+      // server sends named 'tweet' events (with initial replay)
       evt.addEventListener('tweet', (e)=>{
-        const payload = JSON.parse(e.data);
-        if (payload.length > 0 && idle) idle.style.display = 'none';
-        for (const t of payload){ addTweet(t); }
+        try{
+          const payload = JSON.parse(e.data);
+          if (payload.length > 0 && idle) idle.style.display = 'none';
+          for (const t of payload){ addTweet(t); }
+        }catch{}
       });
+      // fallback if server ever uses default 'message'
+      evt.onmessage = (e) => {
+        try{
+          const payload = JSON.parse(e.data);
+          if (Array.isArray(payload)) for (const t of payload) addTweet(t);
+        }catch{}
+      };
     </script>
   </body>
 </html>
