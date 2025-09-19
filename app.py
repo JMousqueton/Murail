@@ -226,6 +226,25 @@ def observateur():
         meta_by_id=meta_by_id,   # used by template to show 🔎 / 📝
     )
 
+@app.route("/reset", methods=["GET", "POST"])
+def reset():
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "yes":
+            session.clear()
+            resp = make_response(redirect(url_for("index")))
+            resp.set_cookie(key=app.session_cookie_name, value="", expires=0)
+            resp.set_cookie("ui_theme", "", expires=0)
+            flash("Session réinitialisée.")
+            return resp
+        else:
+            # "no" => retour à l'accueil sans rien faire
+            return redirect(url_for("index"))
+
+    # Si GET, on affiche la page de confirmation
+    return render_template("reset_confirm.html")
+
+
 
 @app.route("/")
 def index():
