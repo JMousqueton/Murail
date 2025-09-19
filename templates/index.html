@@ -17,70 +17,64 @@
     </style>
   </head>
   <body class="text-light">
-
-    <!-- Navbar avec switch thème -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-      <div class="container-fluid">
-        <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">Simulation</a>
-        <div class="ms-auto">
-          <button id="themeToggle" class="btn btn-sm btn-outline-light">🌙/☀️</button>
-        </div>
-      </div>
-    </nav>
-
     <div class="container py-4">
       <h1 class="h4 mb-4">Simulation d’exercice</h1>
 
-      <div class="row g-4">
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="{{ url_for('socialmedia') }}" target="_blank" class="text-decoration-none">
-            <div class="card bg-dark border border-secondary h-100">
-              <div class="card-body text-center">
-                <h2 class="h5 text-info">SocialMedia</h2>
-                <p class="small text-secondary">Voir le fil type Twitter</p>
-              </div>
-            </div>
-          </a>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="{{ url_for('messagerie') }}" target="_blank" class="text-decoration-none">
-            <div class="card bg-dark border border-secondary h-100">
-              <div class="card-body text-center">
-                <h2 class="h5 text-info">Messagerie</h2>
-                <p class="small text-secondary">Accéder aux messages par rôle</p>
-              </div>
-            </div>
-          </a>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="{{ url_for('observateur') }}" target="_blank" class="text-decoration-none">
-            <div class="card bg-dark border border-secondary h-100">
-              <div class="card-body text-center">
-                <h2 class="h5 text-info">Observateur</h2>
-                <p class="small text-secondary">Nécessite un mot de passe</p>
-              </div>
-            </div>
-          </a>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="{{ url_for('admin') }}" target="_blank" class="text-decoration-none">
-            <div class="card bg-dark border border-secondary h-100">
-              <div class="card-body text-center">
-                <h2 class="h5 text-info">Administration</h2>
-                <p class="small text-secondary">Nécessite un mot de passe</p>
-                {% if n_tweets > 0 and n_messages > 0 %}
-                  <p class="mt-2">Scénario <span class="badge bg-success">chargé</span></p>
-                {% else %}
-                  <p class="mt-2">Scénario <span class="badge bg-danger">vide</span></p>
-                {% endif %}
-              </div>
-            </div>
-          </a>
+<div class="row g-4">
+  <div class="col-12 col-sm-6 col-md-3">
+    <a href="{{ url_for('socialmedia') }}" target="_blank" class="text-decoration-none">
+      <div class="card bg-dark border border-secondary h-100">
+        <div class="card-body text-center">
+          <h2 class="h5 text-info">SocialMedia</h2>
+          <p class="small text-secondary">Voir le fil type Twitter</p>
         </div>
       </div>
+    </a>
+  </div>
+
+  <div class="col-12 col-sm-6 col-md-3">
+    <a href="{{ url_for('messagerie') }}" target="_blank" class="text-decoration-none">
+      <div class="card bg-dark border border-secondary h-100">
+        <div class="card-body text-center">
+          <h2 class="h5 text-info">Messagerie</h2>
+          <p class="small text-secondary">Accéder aux messages par rôle</p>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-12 col-sm-6 col-md-3">
+    <a href="{{ url_for('observateur') }}" target="_blank" class="text-decoration-none">
+      <div class="card bg-dark border border-secondary h-100">
+        <div class="card-body text-center">
+          <h2 class="h5 text-info">Observateur</h2>
+          <p class="small text-secondary">Nécessite un mot de passe</p>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-12 col-sm-6 col-md-3">
+    <a href="{{ url_for('admin') }}" target="_blank" class="text-decoration-none">
+      <div class="card bg-dark border border-secondary h-100">
+        <div class="card-body text-center">
+          <h2 class="h5 text-info">Administration</h2>
+          <p class="small text-secondary">Nécessite un mot de passe</p>
+          {% if n_tweets > 0 and n_messages > 0 %}
+            <p class="mt-2">Scénario <span class="badge bg-success">chargé</span></p>
+          {% else %}
+            <p class="mt-2">Scénario <span class="badge bg-danger">vide</span></p>
+          {% endif %}
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+
+
+       
+
 
       <hr class="my-4">
 
@@ -89,7 +83,7 @@
         {% if past5 %}
           {% for e in past5 %}
           <div class="item past">
-            <span class="badge bg-secondary">{{ e.type }}</span>
+            <span class="badge bg-secondary">{{ e.id }}</span>
             <strong>{{ e.label }}</strong>
             <div class="small text-muted">{{ e.at.strftime("%H:%M:%S") }}</div>
           </div>
@@ -101,30 +95,8 @@
     </div>
 
     <footer class="text-center mt-5 p-3 bg-dark text-light">
-      <p>© 2025 Julien Mousqueton</p>
-      <p>basé sur l'exercice REMPAR25 de l'ANSSI</p>
-    </footer>
-
-    <script>
-      // ---- Gestion thème clair/sombre ----
-      function setTheme(theme){
-        document.documentElement.setAttribute('data-bs-theme', theme);
-        document.body.classList.toggle('text-light', theme==='dark');
-        document.body.classList.toggle('text-dark', theme==='light');
-        document.body.style.background = (theme==='dark') ? '#0b0f14' : '#fff';
-        localStorage.setItem('ui_theme', theme);
-        document.cookie = "ui_theme=" + theme + "; path=/; SameSite=Lax";
-      }
-      function toggleTheme(){
-        const cur = document.documentElement.getAttribute('data-bs-theme') || 'dark';
-        setTheme(cur === 'dark' ? 'light' : 'dark');
-      }
-      function initTheme(){
-        const saved = localStorage.getItem('ui_theme') || (document.cookie.match(/ui_theme=(dark|light)/)?.[1]);
-        setTheme(saved || 'dark');
-      }
-      document.getElementById('themeToggle').addEventListener('click', toggleTheme);
-      initTheme();
-    </script>
+    <p>© 2025 Julien Mousqueton</p>
+    <p>basé sur l'exercice REMPAR25 de l'ANSSI</p>
+  </footer>
   </body>
 </html>
