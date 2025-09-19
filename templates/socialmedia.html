@@ -36,7 +36,7 @@
 
       /* mobile toggle */
       .mobile-trends-toggle { display:none; }
-      @media (max-width: 991.98px) { /* < lg */
+      @media (max-width: 991.98px) {
         .col-center { border-left: none; border-right: none; }
         .mobile-trends-toggle { display:block; }
       }
@@ -101,19 +101,26 @@
       setInterval(updateClock, 1000); updateClock();
 
       function makeHandle(name){
-        const handle = (name||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'')
-                        .replace(/[^a-z0-9]/g,'').slice(0,15);
-        return '@' + (handle || 'user');
+        var h = (name||'').toLowerCase();
+        try { h = h.normalize('NFD').replace(/[\u0300-\u036f]/g,''); } catch(e) {}
+        h = h.replace(/[^a-z0-9]/g,'').slice(0,15);
+        return '@' + (h || 'user');
       }
       function avatarBg(text){
         let hash = 0; for (let i=0; i<(text||'').length; i++){ hash = (hash<<5) - hash + text.charCodeAt(i); hash|=0 }
-        const hue = Math.abs(hash) % 360; return `hsl(${hue} 70% 45%)`;
+        const hue = Math.abs(hash) % 360; return 'hsl(' + hue + ' 70% 45%)';
       }
       function escapeHtml(s){
-        return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+        return String(s||'')
+          .replace(/&/g,'&amp;')
+          .replace(/</g,'&lt;')
+          .replace(/>/g,'&gt;');
       }
       function initialsOf(name){
-        return ((name||'').match(/\b\p{L}/gu) || ['?']).slice(0,2).join('').toUpperCase();
+        const parts = String(name||'').trim().split(/\s+/);
+        const a = (parts[0] && parts[0].charAt(0)) || '?';
+        const b = (parts[1] && parts[1].charAt(0)) || '';
+        return (a + b).toUpperCase();
       }
       function hashStr(s){
         let h = 2166136261 >>> 0; for (let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
@@ -126,13 +133,14 @@
       const hashtagMap = new Map(); // tag(lower) -> count
       let activeTag = null;
 
-      // extract hashtags from text (Unicode letters/digits/_), case-insensitive
+      // broad Latin range to avoid \p{L}\p{N} (better browser support)
+      const HASHTAG_RE = /(^|[\s.,;:!?()\[\]{}"'])#([A-Za-z0-9_À-ÖØ-öø-ÿ]{1,50})/g;
+
       function extractHashtags(text){
         if (!text) return [];
-        const re = /(^|[\s.,;:!?()\[\]{}"'])#([\p{L}\p{N}_]{1,50})/giu;
         const out = [];
         let m;
-        while ((m = re.exec(text)) !== null){
+        while ((m = HASHTAG_RE.exec(text)) !== null){
           out.push(m[2].toLowerCase());
         }
         return out;
@@ -140,16 +148,15 @@
 
       function updateTrendsUI(){
         const arr = Array.from(hashtagMap.entries())
-          .sort((a,b)=> b[1]-a[1]) // by count
+          .sort((a,b)=> b[1]-a[1])
           .slice(0,10);
 
         trendsList.innerHTML = '';
         for (const [tag, count] of arr){
           const div = document.createElement('div');
           div.className = 'trend' + (activeTag === tag ? ' active' : '');
-          div.innerHTML = `<span class="tag">#${escapeHtml(tag)}</span><span class="count">${count}</span>`;
+          div.innerHTML = '<span class="tag">#' + escapeHtml(tag) + '</span><span class="count">' + count + '</span>';
           div.addEventListener('click', ()=>{
-            // toggle filter
             activeTag = (activeTag === tag) ? null : tag;
             filterFeedByHashtag(activeTag);
             updateTrendsUI();
@@ -157,7 +164,7 @@
           });
           trendsList.appendChild(div);
         }
-        trendCount.textContent = arr.length ? `${arr.length} sujets` : 'Aucun sujet';
+        trendCount.textContent = arr.length ? (arr.length + ' sujets') : 'Aucun sujet';
       }
 
       function registerHashtagsFromTweet(t){
@@ -174,20 +181,19 @@
           cards.forEach(c => c.style.display = '');
           return;
         }
-        const normalized = `#${tag}`;
+        const normalized = '#' + tag.toLowerCase();
         cards.forEach(c=>{
-          const text = c.querySelector('.tweet-text')?.textContent?.toLowerCase() || '';
-          c.style.display = text.includes(normalized) ? '' : 'none';
+          const text = (c.querySelector('.tweet-text')?.textContent || '').toLowerCase();
+          c.style.display = text.indexOf(normalized) !== -1 ? '' : 'none';
         });
       }
 
       // ----- convert [img filename.ext] to <img src="/statics/images/filename.ext"> -----
       function replaceImgShortcode(text){
         if (!text) return '';
-        // matches [img name.png] / [img photo.jpg] / [img banner.gif]
-        return text.replace(/\[img\s+([^\]\s]+\.(?:png|jpg|jpeg|gif))\]/gi, (m, fname)=>{
-          const safe = fname.replace(/[^a-zA-Z0-9._-]/g,'');
-          return `<img src="/statics/images/${safe}" alt="">`;
+        return text.replace(/\[img\s+([^\]\s]+\.(?:png|jpg|jpeg|gif))\]/gi, function(_m, fname){
+          const safe = String(fname).replace(/[^a-zA-Z0-9._-]/g,'');
+          return '<img src="/statics/images/' + safe + '" alt="">';
         });
       }
 
@@ -199,10 +205,11 @@
         const handle = makeHandle(t.emetteur);
         const when = new Date(t.at_ms);
 
-        // prepare tweet HTML (with image shortcode replacement)
-        const tweetHtml = replaceImgShortcode(escapeHtml(t.texte))
-                          // allow the <img> we just created (escapeHtml already ran)
-                          .replace(/&lt;img /g,'<img ').replace(/&gt;/g,'>');
+        // safely escape, then re-enable <img> we inject
+        let tweetHtml = escapeHtml(t.texte);
+        tweetHtml = replaceImgShortcode(tweetHtml)
+                      .replace(/&lt;img /g,'<img ')
+                      .replace(/&gt;/g,'>');
 
         const card = document.createElement('article');
         card.className = 'tweet-card';
@@ -233,9 +240,7 @@
             </div>
           </div>`;
 
-        // seed + animation
         seedAndAnimate(card, t);
-        // register hashtags
         registerHashtagsFromTweet(t);
         return card;
       }
@@ -261,8 +266,8 @@
         rtEl.textContent   = String(Math.max(0, baseRt));
 
         const tid = card.dataset.tid;
-        startTimer(tid, () => {
-          if (document.hidden) return; // pause when tab not visible
+        startTimer(tid, function(){
+          if (document.hidden) return;
           const curLike = parseInt(likeEl.textContent || '0', 10);
           const curRt   = parseInt(rtEl.textContent   || '0', 10);
 
@@ -279,27 +284,26 @@
 
       // Clean timers if cards are removed
       const observer = new MutationObserver(() => {
-        const live = new Set([...feed.querySelectorAll('.tweet-card')].map(c => c.dataset.tid));
-        for (const tid of [...timers.keys()]) if (!live.has(tid)) stopTimer(tid);
+        const live = new Set([].map.call(feed.querySelectorAll('.tweet-card'), c => c.dataset.tid));
+        for (const tid of Array.from(timers.keys())) if (!live.has(tid)) stopTimer(tid);
       });
       observer.observe(feed, { childList: true });
 
       // ----- SSE -----
-      const evt = new EventSource("{{ url_for('stream_tweets') }}");
-      // server sends named 'tweet' events (with initial replay)
-      evt.addEventListener('tweet', (e)=>{
+      const evt = new EventSource("/stream_tweets");
+      evt.addEventListener('tweet', function(e){
         try{
           const payload = JSON.parse(e.data);
           if (payload.length > 0 && idle) idle.style.display = 'none';
-          for (const t of payload){ addTweet(t); }
-        }catch{}
+          for (let i=0;i<payload.length;i++){ addTweet(payload[i]); }
+        }catch(_e){}
       });
       // fallback if server ever uses default 'message'
-      evt.onmessage = (e) => {
+      evt.onmessage = function(e){
         try{
           const payload = JSON.parse(e.data);
-          if (Array.isArray(payload)) for (const t of payload) addTweet(t);
-        }catch{}
+          if (Array.isArray(payload)) for (let i=0;i<payload.length;i++) addTweet(payload[i]);
+        }catch(_e){}
       };
     </script>
   </body>
