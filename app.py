@@ -232,20 +232,24 @@ def index():
     with STATE_LOCK:
         n_tw = len(TWEETS)
         n_msg = len(MESSAGES)
-        events = []
-        for t in TWEETS:
-            events.append({"at": t["at"], "type": "tweet", "label": f"Tweet de {t['emetteur']}"})
-        for m in MESSAGES:
-            events.append({"at": m["at"], "type": "message", "label": f"Message à {m['destinataire']} (de {m['emetteur']})"})
-        events.sort(key=lambda e: e["at"]) if events else None
+        # Ne prendre que les messages
+        events = [
+            {"at": m["at"], "type": "message",
+             "label": f"Message à {m['destinataire']} (de {m['emetteur']})"}
+            for m in MESSAGES
+        ]
+        events.sort(key=lambda e: e["at"])
 
     now = datetime.now(tz=APP_TZ)
     past = [e for e in events if e["at"] < now]
-    past5 = past[-5:]
+    past5 = past[-5:]  # 5 derniers messages uniquement
 
-    return render_template("index.html",
-                           n_tweets=n_tw, n_messages=n_msg,
-                           past5=past5)
+    return render_template(
+        "index.html",
+        n_tweets=n_tw, n_messages=n_msg,
+        past5=past5
+    )
+
 
 
 
