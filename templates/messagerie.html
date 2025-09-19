@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="fr" data-bs-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Simulation – Messagerie</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      :root{ --cc-border: rgba(255,255,255,.12); --cc-muted:#9aa0a6; }
+      body{ background:#0b0f14; color:#fff; }
+      .small-muted{ color:var(--cc-muted); }
+
+      /* Webmail layout */
+      .mail-sidebar{ border-right:1px solid var(--cc-border); }
+      .mail-list .item{ border-bottom:1px solid var(--cc-border); padding:.75rem; cursor:pointer; transition: background .15s ease; }
+      .mail-list .item:hover{ background:rgba(255,255,255,.06); }
+      .mail-list .item.processed{ opacity:.7; }
+      .mail-body{ height: calc(100vh - 180px); overflow:auto; }
+      .header-bar{ position:sticky; top:0; z-index:5; backdrop-filter: blur(6px); background: rgba(0,0,0,.4); border-bottom:1px solid var(--cc-border); }
+      .badge-processed{ background: rgba(25,135,84,.18); border: 1px solid rgba(25,135,84,.45); color:#9bd2b7; }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid py-3">
+      <!-- Header -->
+      <div class="header-bar d-flex align-items-center justify-content-between px-2 px-md-3 py-2 mb-3">
+        <h1 class="h5 m-0">Messagerie</h1>
+
+        {% if selected_role %}
+          <form action="{{ url_for('messagerie_change') }}" method="post">
+            <button class="btn btn-sm btn-outline-light">Changement de profil</button>
+          </form>
+        {% else %}
+          <div class="small-muted">Choisissez un profil pour commencer</div>
+        {% endif %}
+      </div>
+
+      {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="alert alert-warning">{{ messages[0] }}</div>
+      {% endif %}
+      {% endwith %}
+
+      {% if not selected_role %}
+        <!-- Login card if no role yet -->
+        <div class="d-flex justify-content-center align-items-center" style="min-height:50vh;">
+          <div class="card bg-transparent border" style="min-width:320px;">
+            <div class="card-body">
+              <h2 class="h6 mb-3">Se connecter en tant que…</h2>
+              <form method="post" class="row g-3">
+                <div class="col-12">
+                  <label class="form-label">Profil</label>
+                  <select name="role" class="form-select" required>
+                    <option value="" disabled selected>Choisir un rôle…</option>
+                    {% for r in roles %}
+                      <option value="{{ r }}">{{ r }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-12">
+                  <button class="btn btn-primary w-100">Entrer</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+      {% else %}
+        <!-- Webmail layout -->
+        <div class="row g-0">
+          <!-- Sidebar list -->
+          <aside class="col-12 col-md-4 mail-sidebar">
+            <div class="d-flex align-items-center justify-content-between px-3 mb-2">
+              <div class="small-muted">Boîte de réception – <strong>{{ selected_role }}</strong></div>
+            </div>
+            <div id="mail-list" class="mail-list"></div>
+          </aside>
+
+          <!-- Reading pane -->
+          <main class="col-12 col-md-8">
+            <div id="mail-view" class="mail-body border-start p-3">
+              <div class="small-muted text-center mt-5">Sélectionnez un message pour l’afficher ici.</div>
+            </div>
+          </main>
+        </div>
+
+        <!-- Idle text for first load -->
+        <div id="idle" class="text-center my-3 small-muted">En attente des messages…</div>
+      {% endif %}
+    </div>
+
+    {% if selected_role %}
+    <script>
+      const mailList = document.getElementById('mail-list');
+      const mailView = document.getElementById('mail-view');
+      const idle = document.getElementById('idle');
+      const CURRENT_ROLE = '{{ selected_role }}';
+
+      const seen = new Set(); // avoid duplicates between history and SSE
+
+      function escapeHtml(s){ return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+      // ----- local persistence (processed state) -----
+      function storageKey(role){ return 'processed_msgs::' + (role || ''); }
+      function loadProcessed(role){
+        try { return JSON.parse(localStorage.getItem(storageKey(role)) || '{}'); }
+        catch { return {}; }
+      }
+      function saveProcessed(role, obj){
+        try { localStorage.setItem(storageKey(role), JSON.stringify(obj || {})); }
+        catch {}
+      }
+      function isProcessed(id){
+        return !!loadProcessed(CURRENT_ROLE)[id];
+      }
+      function setProcessed(id, val){
+        const map = loadProcessed(CURRENT_ROLE);
+        if (val) map[id] = true; else delete map[id];
+        saveProcessed(CURRENT_ROLE, map);
+      }
+
+      function formatTime(ms){
+        return new Date(ms).toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute:'2-digit' });
+      }
+
+      function renderProcessedBadge(val){
+        return val ? `<span class="badge badge-processed ms-2">✅ traité</span>` : '';
+      }
+
+      function updateListItemUI(li, processed){
+        if (!li) return;
+        li.classList.toggle('processed', processed);
+        const status = li.querySelector('.status-badge');
+        if (status) status.innerHTML = renderProcessedBadge(processed);
+      }
+
+      function updateDetailUI(processed){
+        const cb = mailView.querySelector('#detail-processed');
+        if (cb) cb.checked = processed;
+        const hdr = mailView.querySelector('#detail-processed-badge');
+        if (hdr) hdr.innerHTML = renderProcessedBadge(processed);
+      }
+
+      // ----- list + detail rendering -----
+      function addMessageToList(m){
+        if (!m || !m.id) return;
+        if (seen.has(m.id)) return;
+        seen.add(m.id);
+
+        const li = document.createElement('div');
+        li.className = 'item';
+        li.dataset.mid = m.id;
+
+        const when = formatTime(m.at_ms);
+        const processed = isProcessed(m.id);
+
+        li.innerHTML = `
+          <div class="d-flex justify-content-between align-items-baseline">
+            <strong>Message #${escapeHtml(m.id || '')}</strong>
+            <span class="small-muted ms-2">${when}</span>
+          </div>
+          <div>
+            <span class="badge bg-success">Émetteur</span> ${escapeHtml(m.emetteur||'')}
+            <span class="badge bg-danger ms-2">Destinataire</span> ${escapeHtml(m.destinataire||'')}
+            <span class="status-badge ms-2">${renderProcessedBadge(processed)}</span>
+          </div>
+        `;
+
+        li.addEventListener('click', ()=>showMessage(m));
+        mailList.prepend(li);
+        if (idle) idle.style.display = 'none';
+        if (mailList.childElementCount === 1) showMessage(m);
+      }
+
+      function showMessage(m){
+        const when = formatTime(m.at_ms);
+        const processed = isProcessed(m.id);
+        mailView.dataset.openId = m.id;
+
+        mailView.innerHTML = `
+          <div class="d-flex justify-content-between align-items-baseline mb-2">
+            <h2 class="h5 m-0">Message #${escapeHtml(m.id || '')}</h2>
+            <div id="detail-processed-badge">${renderProcessedBadge(processed)}</div>
+          </div>
+          <div class="mb-1"><span class="badge bg-success">Émetteur</span> ${escapeHtml(m.emetteur||'')}</div>
+          <div class="mb-1"><span class="badge bg-danger">Destinataire</span> ${escapeHtml(m.destinataire||'')}</div>
+          <div class="mb-2"><strong>Horaire de distribution :</strong> ${when}</div>
+
+          <div class="form-check form-switch my-2">
+            <input class="form-check-input" type="checkbox" role="switch" id="detail-processed" ${processed ? 'checked':''}>
+            <label class="form-check-label" for="detail-processed">Marquer comme traité</label>
+          </div>
+          <hr>
+          <div class="mt-3" style="white-space:pre-wrap">${escapeHtml(m.stimuli||'')}</div>
+        `;
+
+        const detailCb = document.getElementById('detail-processed');
+        detailCb.addEventListener('change', (ev)=>{
+          const val = ev.target.checked;
+          setProcessed(m.id, val);
+          updateDetailUI(val);
+          const li = mailList.querySelector(`[data-mid="${CSS.escape(m.id)}"]`);
+          updateListItemUI(li, val);
+        });
+      }
+
+      // ----- load history once, then attach SSE -----
+      async function loadHistory() {
+        try {
+          const res = await fetch(`/messages?role=${encodeURIComponent(CURRENT_ROLE)}&limit=100`, { cache: 'no-store' });
+          const data = await res.json();
+          if (Array.isArray(data) && data.length) {
+            // Add oldest first so newest ends on top after prepend
+            for (const m of data) addMessageToList(m);
+          }
+          if (idle && mailList.childElementCount > 0) idle.style.display = 'none';
+        } catch (e) {
+          console.warn('History load failed', e);
+        }
+      }
+
+      (async function init(){
+        await loadHistory();
+
+        // SSE connection scoped to the selected role
+        const evt = new EventSource(`{{ url_for('stream_messages') }}?role=${encodeURIComponent('{{ selected_role }}')}`);
+        evt.addEventListener('message', (e) => {
+          const payload = JSON.parse(e.data);
+          if (payload.length > 0 && idle) idle.style.display = 'none';
+          for (const m of payload) { addMessageToList(m); }
+        });
+        // optional heartbeat
+        evt.addEventListener('ping', () => {});
+        evt.onerror = () => {
+          // let browser auto-reconnect; optionally show a subtle hint
+          // console.debug('SSE error; browser will attempt to reconnect');
+        };
+      })();
+    </script>
+    {% endif %}
+  </body>
+</html>

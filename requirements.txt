@@ -1,0 +1,6 @@
+Flask
+pandas
+python-dateutil
+openpyxl
+Unidecode
+python-dotenv
