@@ -19,6 +19,8 @@ import pandas as pd
 
 from dotenv import load_dotenv  # NEW
 
+from werkzeug.utils import secure_filename
+
 load_dotenv()  # NEW: load variables from .env at project root
 
 APP_TZ = gettz("Europe/Paris")
@@ -33,6 +35,11 @@ DATA_PATH = os.environ.get("SCENARIO_XLSX", os.path.join("data", "scenario.xlsx"
 ADMIN_PASSWORD     = os.environ.get("ADMIN_PASSWORD", "changeme_admin")       # NEW
 OBSERVER_PASSWORD  = os.environ.get("OBSERVER_PASSWORD", "changeme_observer") # NEW
 APP_ID             = os.environ.get("APP_ID", "SIM-LOCAL")                    # NEW
+
+UPLOAD_FOLDER = os.path.join("static", "images")
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret-change-me")
@@ -64,6 +71,31 @@ def parse_horaire(val) -> datetime:
     else:
         dt = dt.astimezone(APP_TZ)
     return dt
+
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route("/upload_image", methods=["POST"])
+def upload_image():
+    if "image" not in request.files:
+        flash("Aucun fichier sélectionné")
+        return redirect(url_for("admin"))
+
+    file = request.files["image"]
+    if file.filename == "":
+        flash("Nom de fichier vide")
+        return redirect(url_for("admin"))
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        path = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(path)
+        flash(f"Image '{filename}' uploadée avec succès.")
+    else:
+        flash("Format non autorisé. Extensions acceptées : png, jpg, jpeg, gif.")
+
+    return redirect(url_for("admin"))
 
 
 def load_excel(file_like) -> None:

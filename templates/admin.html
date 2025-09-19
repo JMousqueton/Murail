@@ -23,15 +23,27 @@
       {% endif %}
       {% endwith %}
 
+      <!-- Upload Excel -->
       <form action="{{ url_for('admin') }}" method="post" enctype="multipart/form-data" class="mb-4">
         <label class="form-label">Fichier Excel</label>
         <input type="file" name="file" class="form-control mb-2" accept=".xlsx,.xls" required>
         <button class="btn btn-primary">Charger</button>
       </form>
 
+      <!-- Upload Images -->
+      <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data" class="mb-4">
+        <label class="form-label">Uploader une image (.png, .jpg, .jpeg, .gif)</label>
+        <input type="file" name="image" class="form-control mb-2" accept=".png,.jpg,.jpeg,.gif" required>
+        <button class="btn btn-success">Uploader</button>
+      </form>
+
       <div class="row g-3 mb-4">
-        <div class="col-sm-6"><div class="p-3 border rounded-3">Tweets planifiés : <strong>{{ n_tweets }}</strong></div></div>
-        <div class="col-sm-6"><div class="p-3 border rounded-3">Messages planifiés : <strong>{{ n_messages }}</strong></div></div>
+        <div class="col-sm-6">
+          <div class="p-3 border rounded-3">Tweets planifiés : <strong>{{ n_tweets }}</strong></div>
+        </div>
+        <div class="col-sm-6">
+          <div class="p-3 border rounded-3">Messages planifiés : <strong>{{ n_messages }}</strong></div>
+        </div>
       </div>
 
       <h2 class="h6 mb-2">Timeline</h2>
