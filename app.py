@@ -717,7 +717,8 @@ def observateur():
             "stimuli": m.get("stimuli",""),
             "label": f"Message à {m.get('destinataire','')} (de {m.get('emetteur','')})",
         }
-        for m in past_msgs[-3:]
+        # for m in past_msgs[-3:]
+        for m in past_msgs
     ]
     next1 = None
     next2 = None
