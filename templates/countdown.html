@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Décompte</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#000; --fg:#ff1a1a; --shadow:rgba(255,0,0,.25); }
+    html, body { height:100%; margin:0; background:var(--bg); color:var(--fg); }
+    body {
+      display:grid; place-items:center;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      user-select:none; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    .wrap { text-align:center; width:100vw; height:100vh; display:grid; grid-template-rows:1fr auto 1fr; align-items:center; }
+    .spacer { min-height:1rem; }
+    .clock {
+      letter-spacing:.06em; line-height:1;
+      text-shadow: 0 0 10px var(--shadow), 0 0 25px var(--shadow), 0 0 50px var(--shadow);
+      font-size: clamp(2.5rem, 16vw, 28rem);
+      font-variant-numeric: tabular-nums lining-nums;
+    }
+    .units { opacity:.8; font-size: clamp(.8rem, 2.4vw, 2rem); letter-spacing:.2em; margin-top:1rem; }
+    .done { animation: blink 1s steps(2, start) infinite; }
+    @keyframes blink { to { visibility:hidden; } }
+    @media (max-height:420px){ .wrap{grid-template-rows:auto;} .spacer{display:none;} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="spacer"></div>
+    <div>
+      <div id="clock" class="clock" aria-live="polite">00:00:00</div>
+      <div id="units" class="units" aria-hidden="true">HH:MM:SS</div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+  <script>
+    (function () {
+      const clockEl = document.getElementById("clock");
+      const unitsEl = document.getElementById("units");
+
+      const SERVER_TARGET_ISO = "{{ target_iso|default('', true) }}";
+
+      const pad2 = n => String(n).padStart(2, "0");
+      const clampNonNeg = n => (n < 0 ? 0 : n);
+
+      function getParams() {
+        const url = new URL(window.location.href);
+        return Object.fromEntries(url.searchParams.entries());
+      }
+
+      function parseTarget(params) {
+        if (SERVER_TARGET_ISO) {
+          const d = new Date(SERVER_TARGET_ISO);
+          if (!isNaN(d)) return d.getTime();
+        }
+        if (params.t) {
+          const d = new Date(params.t);
+          if (!isNaN(d)) return d.getTime();
+        }
+        const now = Date.now();
+        const map = { seconds:1e3, minutes:6e4, hours:36e5, days:864e5 };
+        for (const k of Object.keys(map)) {
+          if (params[k]) {
+            const v = Number(params[k]); if (!Number.isNaN(v) && v > 0) return now + v * map[k];
+          }
+        }
+        return now + 10 * 60 * 1000;
+      }
+
+      function formatDHMS(msLeft) {
+        const totalSec = Math.floor(clampNonNeg(msLeft) / 1000);
+        const days = Math.floor(totalSec / 86400);
+        const hours = Math.floor((totalSec % 86400) / 3600);
+        const mins = Math.floor((totalSec % 3600) / 60);
+        const secs = totalSec % 60;
+        if (days > 0) return { text: `${days}:${pad2(hours)}:${pad2(mins)}:${pad2(secs)}`, units: "DD:HH:MM:SS" };
+        return { text: `${pad2(hours)}:${pad2(mins)}:${pad2(secs)}`, units: "HH:MM:SS" };
+      }
+
+      const params = getParams();
+      const target = parseTarget(params);
+
+      let lastShown = "";
+      function tick() {
+        const msLeft = target - Date.now();
+        if (msLeft <= 0) {
+          if (lastShown !== "00:00:00") {
+            clockEl.textContent = "00:00:00"; unitsEl.textContent = "HH:MM:SS"; clockEl.classList.add("done");
+          }
+          lastShown = "00:00:00";
+          requestAnimationFrame(()=>{});
+          return;
+        }
+        const { text, units } = formatDHMS(msLeft);
+        if (text !== lastShown) { clockEl.textContent = text; unitsEl.textContent = units; clockEl.classList.remove("done"); lastShown = text; }
+      }
+
+      function scheduleNextTick() { tick(); setTimeout(scheduleNextTick, 1000 - (Date.now() % 1000)); }
+      scheduleNextTick();
+    })();
+  </script>
+</body>
+</html>
