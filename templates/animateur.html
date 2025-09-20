@@ -116,7 +116,8 @@
   const past = events.filter(e => e.at_ms < now);
   const future = events.filter(e => e.at_ms >= now);
 
-  const past5 = past.slice(-5);
+  //const past5 = past.slice(-5);
+  const past5 = past.slice(-3);
   const next1 = future[0] || null;
   const next2 = future[1] || null;   // <-- always try to fetch one more
 
