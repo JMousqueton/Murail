@@ -26,11 +26,12 @@ load_dotenv()  # NEW: load variables from .env at project root
 APP_TZ = gettz("Europe/Paris")
 ROLES = [
     "Communication", "Décision", "Informatique",
-    "Juridique / Finance", "Ressources Humaines"
+    "Juridique / Finance", "Ressources Humaines", 
+    "Métier"
 ]
 
 # app.py (near your other env reads)
-DATA_PATH = os.environ.get("SCENARIO_XLSX", os.path.join("data", "scenario.xlsx"))
+DATA_PATH = os.environ.get("SCENARIO_XLSX", os.path.join("Sample", "chronogramme.xlsx"))
 
 ADMIN_PASSWORD     = os.environ.get("ADMIN_PASSWORD", "changeme_admin")       
 OBSERVER_PASSWORD  = os.environ.get("OBSERVER_PASSWORD", "changeme_observer") 
