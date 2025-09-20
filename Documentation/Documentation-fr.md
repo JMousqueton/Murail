@@ -1,4 +1,7 @@
-# 📄 Documentation – Compléter le fichier Excel du scénario
+# 📄 Documentation
+
+
+## ⚙️ Compléter le fichier Excel du scénario
 
 Ce fichier Excel permet de définir les **stimuli** qui seront déclenchés automatiquement dans la simulation (tweets, messages ou décompte).
 
@@ -6,9 +9,9 @@ Chaque ligne correspond à un événement.
 
 ---
 
-## 🗂️ Colonnes obligatoires
+### 🗂️ Colonnes obligatoires
 
-### `id`
+#### `id`
 - **Uniquement pour les messages**.
 - Sert à identifier et ordonner les messages.
 - Format recommandé : **numérotation simple et croissante** (`001`, `002`, `003`, …).  
@@ -17,14 +20,14 @@ Chaque ligne correspond à un événement.
 
 ---
 
-### `Horaire`
+#### `Horaire`
 - Heure de déclenchement de l’événement au format **HH:MM**.
 - La date du jour est automatiquement utilisée.
 - Exemple : `09:15` déclenchera l’événement à 9h15 (heure de Paris).
 
 ---
 
-### `Type`
+#### `Type`
 - Type de stimulus attendu :
   - `tweet` → publication sur le flux réseaux sociaux.
   - `message` → arrivée dans la messagerie.
@@ -32,14 +35,14 @@ Chaque ligne correspond à un événement.
 
 ---
 
-### `Emetteur`
+#### `Emetteur`
 - **Obligatoire** pour les `tweet` et les `message`.
 - Nom de la personne ou entité qui envoie.
 - Exemple : `Direction`, `RSSI`, `Journal Le Monde`.
 
 ---
 
-### `Destinataire`
+#### `Destinataire`
 - **Uniquement pour les messages**.
 - Correspond au rôle cible du message :
   - `Communication`
@@ -52,7 +55,7 @@ Chaque ligne correspond à un événement.
 
 ---
 
-### `Stimuli`
+#### `Stimuli`
 - Contenu de l’événement.
 - Pour un `tweet` → texte du tweet (hashtags autorisés).  
   - **Astuce : vous pouvez insérer une image** en utilisant la syntaxe :  
@@ -67,21 +70,21 @@ Chaque ligne correspond à un événement.
 
 ---
 
-## 📝 Colonnes optionnelles
+### 📝 Colonnes optionnelles
 
-### `Réaction attendue`
+#### `Réaction attendue`
 - Indique la réponse souhaitée des participants.  
 - Exemple : *"Prévenir le service communication"*.
 
-### `Commentaire`
+#### `Commentaire`
 - Informations complémentaires destinées aux animateurs de l’exercice.
 
-### `Livrable`
+#### `Livrable`
 - Indique un document attendu (exemple : *"Rédiger un communiqué de presse"*).
 
 ---
 
-## ✅ Exemple de tableau
+### ✅ Exemple de tableau
 
 | id   | Horaire | Type     | Emetteur      | Destinataire   | Stimuli                                   | Réaction attendue                  | Commentaire              | Livrable               |
 |------|---------|----------|---------------|----------------|-------------------------------------------|------------------------------------|--------------------------|------------------------|
@@ -93,3 +96,97 @@ Chaque ligne correspond à un événement.
 ---
 
 👉 Avec cette structure, la simulation sait **quoi déclencher, quand, et pour qui**.
+
+
+## 🖥️ Interface utilisateur
+
+L’application REMPAR propose plusieurs interfaces web permettant aux participants et aux animateurs de suivre le déroulement de l’exercice.
+
+---
+
+### 📌 Page d’accueil (`/`)
+
+- **Vue générale** de l’exercice.
+- Affiche :
+  - Les accès vers les différentes interfaces (Réseaux sociaux, Messagerie, Observateur, Administration).
+  - Le statut du scénario (chargé ou vide).
+  - Les **5 derniers événements** déclenchés (messages uniquement).
+- Sert de point d’entrée pour les participants.
+
+[! Accueil](img/accueil.png)
+
+---
+
+### 🐦 Réseaux sociaux (`/socialmedia`)
+
+- Simule un **flux type Twitter**.
+- Fonctionnalités :
+  - Affichage des **tweets** programmés dans le scénario.
+  - Support des **hashtags** → les tendances s’actualisent en temps réel dans la colonne de droite.
+  - Possibilité d’inclure des **images** dans les tweets via la syntaxe `[img nom.png]`.
+  - Affichage dynamique du **nombre de retweets et de likes**, qui évoluent automatiquement.
+  - Filtrage par hashtag actif → cliquer sur un sujet de tendance limite l’affichage aux tweets correspondants.
+- Une horloge (heure de Paris) est visible en haut à droite.
+
+[! Réseaux sociaux](img/mediassociaux.png)
+
+---
+
+### ✉️ Messagerie (`/messagerie`)
+
+- Simule une **messagerie interne** (type Outlook / Webmail).
+- Fonctionnalités :
+  - Chaque participant choisit son **rôle** (Communication, Décision, Informatique, RH, etc.).
+  - La boîte de réception affiche les **messages adressés à ce rôle**.
+  - Les messages peuvent être **ouverts et consultés**.
+  - Chaque message peut être marqué comme **traité** ✅ (stockage local, persistant par rôle).
+  - L’historique des 100 derniers messages est disponible au chargement.
+  - Flux en temps réel grâce au **SSE** (Server-Sent Events).
+
+[! Messagerie](img/messagerie.png)
+
+---
+
+### 🔎 Observateur (`/observateur`)
+
+- Réservé aux **animateurs / contrôleurs**.
+- Accès via mot de passe (ou prérempli en mode démo).
+- Fonctionnalités :
+  - Vue synthétique des **messages diffusés**.
+  - Les **5 derniers messages**.
+  - Les **2 prochains messages** programmés.
+  - Affichage des **réactions attendues** et **commentaires** définis dans le fichier Excel.
+
+[! Observateur](img/observateur.png)
+
+---
+
+### ⚙️ Administration (`/admin`)
+
+- Réservée aux **animateurs** (mot de passe requis).
+- Fonctionnalités :
+  - **Charger un scénario** (fichier Excel).
+  - Voir les événements passés et futurs.
+  - **Téléverser des images** (qui pourront être utilisées dans les tweets via `[img nom.png]`).
+  - Indicateur si un scénario est chargé ou non.
+
+---
+
+### ⏳ Décompte
+
+- Lorsque le scénario contient un stimulus de type **`decompte`** :
+  - L’interface bascule automatiquement vers une **page de compte à rebours plein écran**.
+  - Le minuteur s’affiche avec un effet lumineux rouge.
+  - À la fin du décompte, les interfaces (Index, Messagerie, SocialMedia) reviennent à la normale automatiquement.
+
+[! Admin](img/admin.png)
+---
+
+### 🧪 Mode Démo
+
+- Une instance de démonstration est disponible :  
+  👉 [https://rempar-demo.mousqueton.io](https://rempar-demo.mousqueton.io)  
+- Dans ce mode :
+  - Le mot de passe Observateur est prérempli automatiquement.
+  - Permet de tester facilement l’interface sans configuration locale.
+
