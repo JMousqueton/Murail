@@ -411,6 +411,85 @@ def messagerie():
     role = session.get('role')
     return render_template("messagerie.html", roles=ROLES, selected_role=role)
 
+@app.route("/stream_observateur")
+def stream_observateur():
+    """
+    Streams *messages only* (stimuli) for the observer timeline, with metadata.
+    On connect: sends all past-due messages (once).
+    Then: streams each message at its due time.
+    """
+    def build_meta_by_id():
+        meta = {}
+        # Build once per emission window to avoid holding the lock too long
+        with STATE_LOCK:
+            for r in RAW_ROWS:
+                if r.get("type") == "message":
+                    rid = r.get("id", "")
+                    if rid:
+                        meta[rid] = {
+                            "reaction": r.get("reaction attendue", "") or "",
+                            "commentaire": r.get("commentaire", "") or "",
+                        }
+        return meta
+
+    def gen():
+        yield "event: ping\ndata: {}\n\n"
+        sent_ids = set()
+        # initial snapshot of metadata
+        meta_by_id = build_meta_by_id()
+
+        # 1) Send all past-due messages on connect
+        now = datetime.now(tz=APP_TZ)
+        due = []
+        with STATE_LOCK:
+            for m in MESSAGES:
+                if m["id"] in sent_ids:
+                    continue
+                if m["at"] <= now:
+                    meta = meta_by_id.get(m["id"], {"reaction": "", "commentaire": ""})
+                    due.append({
+                        "id": m["id"],
+                        "label": f"Message à {m.get('destinataire','')} (de {m.get('emetteur','')})",
+                        "at": m["at"].isoformat(),
+                        "at_ms": int(m["at"].timestamp() * 1000),
+                        "reaction": meta.get("reaction",""),
+                        "commentaire": meta.get("commentaire",""),
+                    })
+                    sent_ids.add(m["id"])
+        if due:
+            payload = app.json.dumps(due)
+            yield f"event: observateur\ndata: {payload}\n\n"
+
+        # 2) Stream new messages as they become due
+        while True:
+            now = datetime.now(tz=APP_TZ)
+            due = []
+            # refresh metadata periodically (or you could keep a timestamp & refresh less often)
+            meta_by_id = build_meta_by_id()
+            with STATE_LOCK:
+                for m in MESSAGES:
+                    if m["id"] in sent_ids:
+                        continue
+                    if m["at"] <= now:
+                        meta = meta_by_id.get(m["id"], {"reaction": "", "commentaire": ""})
+                        due.append({
+                            "id": m["id"],
+                            "label": f"Message à {m.get('destinataire','')} (de {m.get('emetteur','')})",
+                            "at": m["at"].isoformat(),
+                            "at_ms": int(m["at"].timestamp() * 1000),
+                            "reaction": meta.get("reaction",""),
+                            "commentaire": meta.get("commentaire",""),
+                        })
+                        sent_ids.add(m["id"])
+            if due:
+                payload = app.json.dumps(due)
+                yield f"event: observateur\ndata: {payload}\n\n"
+            time.sleep(1)
+
+    return app.response_class(gen(), mimetype="text/event-stream")
+
+
+
 @app.route("/stream_tweets")
 def stream_tweets():
     def gen():
