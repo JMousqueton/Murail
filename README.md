@@ -75,7 +75,10 @@ Le fichier Excel doit contenir au minimum les colonnes suivantes :
 - `commentaire` *(optionnel)* : note pour l’observateur.
 - `livrable` *(optionnel)* : sortie attendue (communiqué, rapport, etc.).
 
+ℹ️ [Documentation en français](Documentation/Documentation-fr.md)
+
 ---
+
 
 ## 🚀 Installation
 
