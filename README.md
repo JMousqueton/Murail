@@ -118,6 +118,27 @@ L’application est alors disponible sur [http://localhost:5000](http://localhos
 
 ---
 
+## Démo en ligne
+
+Une instance de démonstration est disponible à l’adresse suivante :  
+👉 [https://rempar-demo.mousqueton.io](https://rempar-demo.mousqueton.io)
+
+En mode démo :
+
+- L’accès à l’**Observateur** ne nécessite pas de mot de passe.
+- L'accès à l'**administrateur** n'est pas accessible 
+- Les autres fonctionnalités (Messagerie, Réseaux sociaux) restent accessibles pour tester le scénario.
+- Ce mode est uniquement prévu pour découvrir l’outil.
+
+---
+
+## 🚀 ToDo
+
+- [ ] Ajout d’un **mode clair/sombre** (préférence sauvegardée dans le navigateur)
+- [ ] Support **multilingue** (chargement des textes depuis un fichier de traduction)
+
+---
+
 ## 📜 Licence
 
 Projet distribué sous licence GNU.  
