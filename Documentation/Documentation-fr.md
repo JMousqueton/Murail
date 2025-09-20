@@ -179,7 +179,7 @@ L’application REMPAR propose plusieurs interfaces web permettant aux participa
   - Le minuteur s’affiche avec un effet lumineux rouge.
   - À la fin du décompte, les interfaces (Index, Messagerie, SocialMedia) reviennent à la normale automatiquement.
 
-![Admin](img/admin.png)
+![Decompte](img/decompte.png)
 ---
 
 ### 🧪 Mode Démo
