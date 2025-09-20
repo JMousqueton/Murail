@@ -143,6 +143,7 @@ En mode démo :
 
 - [ ] Ajout d’un **mode clair/sombre** (préférence sauvegardée dans le navigateur)
 - [ ] Support **multilingue** (chargement des textes depuis un fichier de traduction)
+- [ ] Possibilité de publier ses propres tweet (limité à la fonction comm)
 
 ---
 
