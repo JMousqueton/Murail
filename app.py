@@ -39,6 +39,9 @@ APP_ID             = os.environ.get("APP_ID", "SIM-LOCAL")                    # 
 UPLOAD_FOLDER = os.path.join("static", "images")
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
 
+# ONLY FOR DEMO PURPOSE 
+DEMO = os.environ.get("DEMO", "false").strip().lower() in ("1", "true", "yes", "on")
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app = Flask(__name__)
@@ -173,18 +176,22 @@ def load_excel(file_like) -> None:
 
 @app.route("/observateur", methods=["GET", "POST"])
 def observateur():
-    # same password as admin, separate flag
     if not session.get("is_observer"):
         if request.method == "POST":
             pwd = request.form.get("password")
-            if pwd == ADMIN_PASSWORD:
+            # IMPORTANT: check against OBSERVER_PASSWORD, not ADMIN_PASSWORD
+            if pwd == OBSERVER_PASSWORD:
                 session["is_observer"] = True
                 return redirect(url_for("observateur"))
             else:
                 flash("Mot de passe incorrect")
                 return redirect(url_for("observateur"))
-        # make login post back here
-        return render_template("admin_login.html", action=url_for("observateur"))
+        # GET -> show login; if DEMO, prefill observer password
+        return render_template(
+            "admin_login.html",
+            action=url_for("observateur"),
+            prefill_password=(OBSERVER_PASSWORD if DEMO else "")
+        )
 
     with STATE_LOCK:
         n_tw = len(TWEETS)       # counts unchanged
