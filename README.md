@@ -77,9 +77,10 @@ Le fichier Excel doit contenir au minimum les colonnes suivantes :
 
 ---
 
-## 📖 Documentation 
+## 📖 Documentation
 
-ℹ️ [Documentation en français](Documentation/Documentation-fr.md)
+Une documentation complète en français expliquant le fonctionnement et la préparation des fichiers Excel est disponible ici :  
+➡️ [Documentation/Documentation-fr.md](Documentation/Documentation-fr.md)
 
 ---
 
