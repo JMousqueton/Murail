@@ -26,13 +26,26 @@
       .mail-body{ height: calc(100vh - 180px); overflow:auto; }
       .header-bar{ position:sticky; top:0; z-index:5; backdrop-filter: blur(6px); background: rgba(0,0,0,.4); border-bottom:1px solid var(--cc-border); }
       .badge-processed{ background: rgba(25,135,84,.18); border: 1px solid rgba(25,135,84,.45); color:#9bd2b7; }
+      /* Apparition en fondu + léger slide */
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.appear {
+  animation: slideInUp 420ms ease-out both;
+}
+
+/* Respecte la réduction d’animations utilisateur */
+@media (prefers-reduced-motion: reduce) {
+  .appear { animation: none; }
+}
     </style>
   </head>
   <body>
     <div class="container-fluid py-3">
       <!-- Header -->
       <div class="header-bar d-flex align-items-center justify-content-between px-2 px-md-3 py-2 mb-3">
-        <h1 class="h5 m-0">Messagerie</h1>
+        <h1 class="h4 m-0"><a href="/"><i class="fa-solid fa-house text-white"></i></a> Messagerie</h1>
 
         {% if selected_role %}
           <div class="d-flex align-items-center gap-2">
@@ -244,7 +257,7 @@ function roleWithIconHTML(role){
             <span class="status-badge">${renderProcessedBadge(processed)}</span>
           </div>
         `;
-
+        li.classList.add('appear'); // animate the new list item  
         li.addEventListener('click', ()=>showMessage(m));
         mailList.prepend(li);
         if (idle) idle.style.display = 'none';
@@ -256,6 +269,12 @@ function roleWithIconHTML(role){
         const when = formatTime(m.at_ms);
         const processed = isProcessed(m.id);
         mailView.dataset.openId = m.id;
+
+        // relance proprement l’animation à chaque affichage de message
+mailView.classList.remove('appear');
+void mailView.offsetWidth;  // force reflow
+mailView.classList.add('appear');
+
 
         mailView.innerHTML = `
           <div class="d-flex justify-content-between align-items-baseline mb-2">
