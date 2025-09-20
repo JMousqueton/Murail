@@ -246,6 +246,7 @@ def observateur():
         n_tw = len(TWEETS)
         n_msg = len(MESSAGES)
 
+        # méta pour afficher réaction attendue / commentaire par ID
         meta_by_id = {}
         for r in RAW_ROWS:
             if r.get("type") == "message":
@@ -256,16 +257,18 @@ def observateur():
                         "commentaire": r.get("commentaire", "")
                     }
 
+        # timeline = messages uniquement
         events = []
         for m in MESSAGES:
             events.append({
-                "at": m["at"],
+                "at": m["at"],  # datetime TZ-aware
                 "type": "message",
                 "label": f"Message à {m['destinataire']} (de {m['emetteur']})",
                 "msg_id": m["id"],
             })
         events.sort(key=lambda e: e["at"])
 
+    # séparation passé / futur
     now = datetime.now(tz=APP_TZ)
     past = [e for e in events if e["at"] < now]
     future = [e for e in events if e["at"] >= now]
@@ -273,12 +276,27 @@ def observateur():
     next1 = future[0] if future else None
     next2 = future[1] if len(future) > 1 else None
 
+    # --- formater au fuseau Europe/Paris (HH:MM:SS) ---
+    def with_local_str(e):
+        if not e:
+            return None
+        return {
+            **e,
+            "at_str": e["at"].astimezone(APP_TZ).strftime("%H:%M:%S"),
+        }
+
+    past5 = [with_local_str(e) for e in past5]
+    next1 = with_local_str(next1)
+    next2 = with_local_str(next2)
+
     return render_template(
         "observateur.html",
         n_tweets=n_tw, n_messages=n_msg,
         past5=past5, next1=next1, next2=next2,
         meta_by_id=meta_by_id,
     )
+
+
 
 @app.route("/reset", methods=["GET", "POST"])
 def reset():

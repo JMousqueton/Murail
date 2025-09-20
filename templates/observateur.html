@@ -48,10 +48,10 @@
             <div class="item past">
               <span class="badge bg-warning text-dark">{{ e.msg_id }}</span>
               <strong class="ms-2">{{ e.label }}</strong>
-              <div class="small-muted">{{ e.at.astimezone().strftime("%H:%M") }}</div>
+              <div class="small-muted">{{ e.at_str }}</div>
 
               {# Métadonnées par ID (réaction / commentaire) #}
-              {% set meta = meta_by_id.get(e.get('msg_id')) %}
+              {% set meta = meta_by_id.get(e.msg_id) %}
               {% if meta and meta.reaction %}
                 <div class="mt-1">🔎 <span class="small-muted">reaction attendue :</span> {{ meta.reaction }}</div>
               {% endif %}
@@ -70,9 +70,9 @@
             <span class="arrow me-2">➜</span>
             <span class="badge bg-warning text-dark">{{ next1.msg_id }}</span>
             <strong class="ms-2">{{ next1.label }}</strong>
-            <div class="small-muted">{{ next1.at.astimezone().strftime("%H:%M") }}</div>
+            <div class="small-muted">{{ next1.at_str }}</div>
 
-            {% set meta = meta_by_id.get(next1.get('msg_id')) %}
+            {% set meta = meta_by_id.get(next1.msg_id) %}
             {% if meta and meta.reaction %}
               <div class="mt-1">🔎 <span class="small-muted">reaction attendue :</span> {{ meta.reaction }}</div>
             {% endif %}
@@ -84,14 +84,14 @@
           <div class="text-secondary">Aucun prochain message.</div>
         {% endif %}
 
-        {# --- Message suivant après le prochain (facultatif) --- #}
+        {# --- Message suivant (facultatif) --- #}
         {% if next2 %}
           <div class="item">
             <span class="badge bg-warning text-dark">{{ next2.msg_id }}</span>
             <strong class="ms-2">{{ next2.label }}</strong>
-            <div class="small-muted">{{ next2.at.astimezone().strftime("%H:%M") }}</div>
+            <div class="small-muted">{{ next2.at_str }}</div>
 
-            {% set meta = meta_by_id.get(next2.get('msg_id')) %}
+            {% set meta = meta_by_id.get(next2.msg_id) %}
             {% if meta and meta.reaction %}
               <div class="mt-1">🔎 <span class="small-muted">reaction attendue :</span> {{ meta.reaction }}</div>
             {% endif %}

@@ -113,7 +113,7 @@ L’application REMPAR propose plusieurs interfaces web permettant aux participa
   - Les **5 derniers événements** déclenchés (messages uniquement).
 - Sert de point d’entrée pour les participants.
 
-[! Accueil](img/accueil.png)
+![Accueil](img/accueil.png)
 
 ---
 
@@ -128,7 +128,7 @@ L’application REMPAR propose plusieurs interfaces web permettant aux participa
   - Filtrage par hashtag actif → cliquer sur un sujet de tendance limite l’affichage aux tweets correspondants.
 - Une horloge (heure de Paris) est visible en haut à droite.
 
-[! Réseaux sociaux](img/mediassociaux.png)
+![Réseaux sociaux](img/mediassociaux.png)
 
 ---
 
@@ -143,7 +143,7 @@ L’application REMPAR propose plusieurs interfaces web permettant aux participa
   - L’historique des 100 derniers messages est disponible au chargement.
   - Flux en temps réel grâce au **SSE** (Server-Sent Events).
 
-[! Messagerie](img/messagerie.png)
+![Messagerie](img/messagerie.png)
 
 ---
 
@@ -157,7 +157,7 @@ L’application REMPAR propose plusieurs interfaces web permettant aux participa
   - Les **2 prochains messages** programmés.
   - Affichage des **réactions attendues** et **commentaires** définis dans le fichier Excel.
 
-[! Observateur](img/observateur.png)
+![Observateur](img/observateur.png)
 
 ---
 
@@ -179,7 +179,7 @@ L’application REMPAR propose plusieurs interfaces web permettant aux participa
   - Le minuteur s’affiche avec un effet lumineux rouge.
   - À la fin du décompte, les interfaces (Index, Messagerie, SocialMedia) reviennent à la normale automatiquement.
 
-[! Admin](img/admin.png)
+![Admin](img/admin.png)
 ---
 
 ### 🧪 Mode Démo
