@@ -214,7 +214,8 @@ Il contient les paramètres sensibles (mots de passe, identifiants, secrets) et 
 ### Détails des variables
 
 - **`ADMIN_PASSWORD`** : mot de passe nécessaire pour accéder à l’interface **Administration**.  
-- **`OBSERVER_PASSWORD`** : mot de passe pour accéder à l’interface **Observateur**.  
+- **`OBSERVER_PASSWORD`** : mot de passe pour accéder à l’interface **Observateur**.
+- **`ANIMATOR_PASSWORD`** : mot de passe pour accéder à l’interface **Animateur**.
 - **`APP_ID`** : identifiant unique de l’instance de simulation (utile pour différencier plusieurs environnements).  
 - **`FLASK_SECRET`** : clé secrète utilisée par Flask pour gérer les sessions utilisateurs (⚠️ doit être unique et complexe).  
 - **`SCENARIO_XLSX`** : chemin vers le fichier Excel contenant le **chronogramme** (par défaut : `./Sample/chronogramme.xlsx`).  
