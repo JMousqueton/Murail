@@ -32,9 +32,11 @@ ROLES = [
 # app.py (near your other env reads)
 DATA_PATH = os.environ.get("SCENARIO_XLSX", os.path.join("data", "scenario.xlsx"))
 
-ADMIN_PASSWORD     = os.environ.get("ADMIN_PASSWORD", "changeme_admin")       # NEW
-OBSERVER_PASSWORD  = os.environ.get("OBSERVER_PASSWORD", "changeme_observer") # NEW
-APP_ID             = os.environ.get("APP_ID", "SIM-LOCAL")                    # NEW
+ADMIN_PASSWORD     = os.environ.get("ADMIN_PASSWORD", "changeme_admin")       
+OBSERVER_PASSWORD  = os.environ.get("OBSERVER_PASSWORD", "changeme_observer") 
+APP_ID             = os.environ.get("APP_ID", "REMPAR-DEMO-LOCAL")
+
+TRACKING = os.environ.get("TRACKING", "")
 
 UPLOAD_FOLDER = os.path.join("static", "images")
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
@@ -100,6 +102,9 @@ def upload_image():
 
     return redirect(url_for("admin"))
 
+@app.context_processor
+def inject_tracking():
+    return dict(TRACKING=TRACKING)
 
 def load_excel(file_like) -> None:
     df = pd.read_excel(file_like, engine="openpyxl")
