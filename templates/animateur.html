@@ -110,70 +110,72 @@
       const timeline = document.getElementById('timeline');
 
       function render(){
-        // sort by time
-        events.sort((a,b)=> a.at_ms - b.at_ms);
-        const now = Date.now();
-        const past = events.filter(e => e.at_ms < now);
-        const future = events.filter(e => e.at_ms >= now);
+  // sort by time
+  events.sort((a,b)=> a.at_ms - b.at_ms);
+  const now = Date.now();
+  const past = events.filter(e => e.at_ms < now);
+  const future = events.filter(e => e.at_ms >= now);
 
-        const past5 = past.slice(-5);               // last 5
-        const next1 = future[0] || null;            // next
-        const next2 = future.length > 1 ? future[1] : null;  // next after
+  const past5 = past.slice(-5);
+  const next1 = future[0] || null;
+  const next2 = future[1] || null;   // <-- always try to fetch one more
 
-        function card(html, extraClass=""){
-          return `<div class="item ${extraClass}">${html}</div>`;
-        }
-        function badge(id){
-          return `<span class="badge bg-warning text-dark">${escapeHtml(id || '')}</span>`;
-        }
-        function metaLines(e){
-          const parts = [];
-          if (e.reaction) parts.push(`<div class="mt-1">🔎 <span class="small-muted">réaction attendue :</span> ${escapeHtml(e.reaction)}</div>`);
-          if (e.commentaire) parts.push(`<div>📝 <span class="small-muted">commentaire :</span> ${escapeHtml(e.commentaire)}</div>`);
-          return parts.join('');
-        }
+  function card(html, extraClass=""){
+    return `<div class="item ${extraClass}">${html}</div>`;
+  }
+  function badge(id){
+    return `<span class="badge bg-warning text-dark">${escapeHtml(id || '')}</span>`;
+  }
+  function metaLines(e){
+    const parts = [];
+    if (e.reaction) parts.push(`<div class="mt-1">🔎 <span class="small-muted">réaction attendue :</span> ${escapeHtml(e.reaction)}</div>`);
+    if (e.commentaire) parts.push(`<div>📝 <span class="small-muted">commentaire :</span> ${escapeHtml(e.commentaire)}</div>`);
+    return parts.join('');
+  }
 
-        const blocks = [];
+  const blocks = [];
 
-        // past5
-        if (past5.length) {
-          for (const e of past5) {
-            blocks.push(card(`
-              ${badge(e.id)}
-              <strong class="ms-2">${escapeHtml(e.label)}</strong>
-              <div class="small-muted">${hhmmFromMs(e.at_ms)}</div>
-              ${metaLines(e)}
-            `, "past"));
-          } 
-        } else {
-          blocks.push(`<div class="text-secondary">Aucun message passé.</div>`);
-        }
+  // --- past5 ---
+  if (past5.length) {
+    for (const e of past5) {
+      blocks.push(card(`
+        ${badge(e.id)}
+        <strong class="ms-2">${escapeHtml(e.label)}</strong>
+        <div class="small-muted">${hhmmFromMs(e.at_ms)}</div>
+        ${metaLines(e)}
+      `, "past"));
+    }
+  } else {
+    blocks.push(`<div class="text-secondary">Aucun message passé.</div>`);
+  }
 
-        // next1
-        if (next1) {
-          blocks.push(card(`
-            <span class="arrow me-2">➜</span>
-            ${badge(next1.id)}
-            <strong class="ms-2">${escapeHtml(next1.label)}</strong>
-            <div class="small-muted">${hhmmFromMs(next1.at_ms)}</div>
-            ${metaLines(next1)}
-          `, "next"));
-        } else {
-          blocks.push(`<div class="text-secondary">Aucun prochain message.</div>`);
-        }
+  // --- next1 ---
+  if (next1) {
+    blocks.push(card(`
+      <span class="arrow me-2">➜</span>
+      ${badge(next1.id)}
+      <strong class="ms-2">${escapeHtml(next1.label)}</strong>
+      <div class="small-muted">${hhmmFromMs(next1.at_ms)}</div>
+      ${metaLines(next1)}
+    `, "next"));
+  } else {
+    blocks.push(`<div class="text-secondary">Aucun prochain message.</div>`);
+  }
 
-        // next2
-        if (next2) {
-          blocks.push(card(`
-            ${badge(next2.id)}
-            <strong class="ms-2">${escapeHtml(next2.label)}</strong>
-            <div class="small-muted">${hhmmFromMs(next2.at_ms)}</div>
-            ${metaLines(next2)}
-          `));
-        }
+  // --- next2 ---
+  if (next2) {
+    blocks.push(card(`
+      ${badge(next2.id)}
+      <strong class="ms-2">${escapeHtml(next2.label)}</strong>
+      <div class="small-muted">${hhmmFromMs(next2.at_ms)}</div>
+      ${metaLines(next2)}
+    `));
+  } else {
+    blocks.push(`<div class="text-secondary">Pas d’autre message planifié.</div>`);
+  }
 
-        timeline.innerHTML = blocks.join('\n');
-      }
+  timeline.innerHTML = blocks.join('\n');
+}
 
       // initial render
       render();
