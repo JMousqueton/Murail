@@ -20,100 +20,77 @@ href="data:image/svg+xml,
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root { --bg:#000; --fg:#ff1a1a; --shadow:rgba(255,0,0,.25); }
-    html, body { height:100%; margin:0; background:var(--bg); color:var(--fg); }
-    body {
-      display:grid; place-items:center;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-      user-select:none; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-    }
-    .wrap { text-align:center; width:100vw; height:100vh; display:grid; grid-template-rows:1fr auto 1fr; align-items:center; }
-    .spacer { min-height:1rem; }
-    .clock {
-      letter-spacing:.06em; line-height:1;
-      text-shadow: 0 0 10px var(--shadow), 0 0 25px var(--shadow), 0 0 50px var(--shadow);
-      font-size: clamp(2.5rem, 16vw, 28rem);
-      font-variant-numeric: tabular-nums lining-nums;
-    }
-    .units { opacity:.8; font-size: clamp(.8rem, 2.4vw, 2rem); letter-spacing:.2em; margin-top:1rem; }
-    .done { animation: blink 1s steps(2, start) infinite; }
-    @keyframes blink { to { visibility:hidden; } }
-    @media (max-height:420px){ .wrap{grid-template-rows:auto;} .spacer{display:none;} }
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);}
+    body{display:grid;place-items:center;font-family:ui-monospace,Consolas,Menlo,monospace}
+    .wrap{width:100vw;height:100vh;display:grid;grid-template-rows:1fr auto 1fr;align-items:center;text-align:center}
+    .clock{font-size:clamp(2.5rem,16vw,28rem);letter-spacing:.06em;text-shadow:0 0 10px var(--shadow),0 0 25px var(--shadow),0 0 50px var(--shadow);font-variant-numeric:tabular-nums lining-nums}
+    .units{opacity:.8;font-size:clamp(.8rem,2.4vw,2rem);letter-spacing:.2em;margin-top:1rem}
+    .done{animation:blink 1s steps(2,start) infinite} @keyframes blink{to{visibility:hidden}}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="spacer"></div>
+    <div></div>
     <div>
       <div id="clock" class="clock" aria-live="polite">00:00:00</div>
       <div id="units" class="units" aria-hidden="true">HH:MM:SS</div>
     </div>
-    <div class="spacer"></div>
+    <div></div>
   </div>
 
   <script>
     (function () {
+      // target passed by Flask: render_template("countdown.html", target_iso=...)
+      const TARGET_ISO = "{{ target_iso }}"; // e.g. 2025-09-19T18:30:00+02:00
+      const target = new Date(TARGET_ISO).getTime();
+
+      // Where to go after countdown: referrer if available, else "/"
+      const returnTo = (document.referrer && new URL(document.referrer).origin === window.location.origin)
+        ? document.referrer
+        : "/";
+
       const clockEl = document.getElementById("clock");
       const unitsEl = document.getElementById("units");
-
-      const SERVER_TARGET_ISO = "{{ target_iso|default('', true) }}";
-
       const pad2 = n => String(n).padStart(2, "0");
-      const clampNonNeg = n => (n < 0 ? 0 : n);
 
-      function getParams() {
-        const url = new URL(window.location.href);
-        return Object.fromEntries(url.searchParams.entries());
+      function fmt(msLeft){
+        const total = Math.max(0, Math.floor(msLeft/1000));
+        const d = Math.floor(total/86400);
+        const h = Math.floor((total%86400)/3600);
+        const m = Math.floor((total%3600)/60);
+        const s = total%60;
+        if (d>0) return { text: `${d}:${pad2(h)}:${pad2(m)}:${pad2(s)}`, units:"DD:HH:MM:SS" };
+        return { text: `${pad2(h)}:${pad2(m)}:${pad2(s)}`, units:"HH:MM:SS" };
       }
 
-      function parseTarget(params) {
-        if (SERVER_TARGET_ISO) {
-          const d = new Date(SERVER_TARGET_ISO);
-          if (!isNaN(d)) return d.getTime();
-        }
-        if (params.t) {
-          const d = new Date(params.t);
-          if (!isNaN(d)) return d.getTime();
-        }
-        const now = Date.now();
-        const map = { seconds:1e3, minutes:6e4, hours:36e5, days:864e5 };
-        for (const k of Object.keys(map)) {
-          if (params[k]) {
-            const v = Number(params[k]); if (!Number.isNaN(v) && v > 0) return now + v * map[k];
-          }
-        }
-        return now + 10 * 60 * 1000;
-      }
-
-      function formatDHMS(msLeft) {
-        const totalSec = Math.floor(clampNonNeg(msLeft) / 1000);
-        const days = Math.floor(totalSec / 86400);
-        const hours = Math.floor((totalSec % 86400) / 3600);
-        const mins = Math.floor((totalSec % 3600) / 60);
-        const secs = totalSec % 60;
-        if (days > 0) return { text: `${days}:${pad2(hours)}:${pad2(mins)}:${pad2(secs)}`, units: "DD:HH:MM:SS" };
-        return { text: `${pad2(hours)}:${pad2(mins)}:${pad2(secs)}`, units: "HH:MM:SS" };
-      }
-
-      const params = getParams();
-      const target = parseTarget(params);
-
-      let lastShown = "";
-      function tick() {
+      let last = "";
+      function tick(){
         const msLeft = target - Date.now();
-        if (msLeft <= 0) {
-          if (lastShown !== "00:00:00") {
-            clockEl.textContent = "00:00:00"; unitsEl.textContent = "HH:MM:SS"; clockEl.classList.add("done");
+        if (msLeft <= 0){
+          if (last !== "00:00:00"){
+            clockEl.textContent = "00:00:00";
+            unitsEl.textContent = "HH:MM:SS";
+            clockEl.classList.add("done");
           }
-          lastShown = "00:00:00";
-          requestAnimationFrame(()=>{});
+          // Redirect back to the original page (or /) when finished
+          window.location.replace(returnTo);
           return;
         }
-        const { text, units } = formatDHMS(msLeft);
-        if (text !== lastShown) { clockEl.textContent = text; unitsEl.textContent = units; clockEl.classList.remove("done"); lastShown = text; }
+        const {text, units} = fmt(msLeft);
+        if (text !== last){
+          clockEl.textContent = text;
+          unitsEl.textContent = units;
+          clockEl.classList.remove("done");
+          last = text;
+        }
       }
+      (function schedule(){ tick(); setTimeout(schedule, 1000 - (Date.now()%1000)); })();
 
-      function scheduleNextTick() { tick(); setTimeout(scheduleNextTick, 1000 - (Date.now() % 1000)); }
-      scheduleNextTick();
+      // Also listen to SSE in case the server tells us the décompte ended
+      try {
+        const evt = new EventSource("{{ url_for('stream_tweets') }}");
+        evt.addEventListener("decompte_end", () => window.location.replace(returnTo));
+      } catch (_) {}
     })();
   </script>
 </body>
