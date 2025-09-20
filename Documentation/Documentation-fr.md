@@ -175,12 +175,35 @@ L’application REMPAR propose plusieurs interfaces web permettant aux participa
 ### ⏳ Décompte
 
 - Lorsque le scénario contient un stimulus de type **`decompte`** :
-  - L’interface bascule automatiquement vers une **page de compte à rebours plein écran**.
+  - Les interfaces du joueur (Messagerie et Médias Sociaux) basculent automatiquement vers une **page de compte à rebours plein écran**.
+  - La page d'accueil affiche aussi le décompte 
   - Le minuteur s’affiche avec un effet lumineux rouge.
-  - À la fin du décompte, les interfaces (Index, Messagerie, SocialMedia) reviennent à la normale automatiquement.
+  - À la fin du décompte, les interfaces Messagerie et Réseaux Sociaux  reviennent à la normale automatiquement.
 
 ![Decompte](img/decompte.png)
+
 ---
+
+## ⚙️ Fichier `.env`
+
+Le fichier `.env` permet de configurer l’application sans modifier le code.  
+Il contient les paramètres sensibles (mots de passe, identifiants, secrets) et les chemins de fichiers.  
+
+### Détails des variables
+
+- **`ADMIN_PASSWORD`** : mot de passe nécessaire pour accéder à l’interface **Administration**.  
+- **`OBSERVER_PASSWORD`** : mot de passe pour accéder à l’interface **Observateur**.  
+- **`APP_ID`** : identifiant unique de l’instance de simulation (utile pour différencier plusieurs environnements).  
+- **`FLASK_SECRET`** : clé secrète utilisée par Flask pour gérer les sessions utilisateurs (⚠️ doit être unique et complexe).  
+- **`SCENARIO_XLSX`** : chemin vers le fichier Excel contenant le **chronogramme** (par défaut : `./Sample/chronogramme.xlsx`).  
+- **`DEMO`** : si `true`, active le **mode démo** (le mot de passe Observateur est pré-rempli automatiquement).  
+- **`TRACKING`** : permet d’ajouter un script de suivi analytique (exemple : **Matomo**, Google Analytics…).  
+   - Le contenu est injecté tel quel dans le bas de chaque page (`{{ TRACKING | safe }}`).  
+   - Exemple typique : un script Matomo hébergé sur un serveur interne.  
+
+👉 **Conseil sécurité** : ne jamais partager publiquement le contenu réel du fichier `.env` (surtout les mots de passe et `FLASK_SECRET`).   
+
+--- 
 
 ### 🧪 Mode Démo
 
