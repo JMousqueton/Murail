@@ -11,26 +11,57 @@
   <rect x='25' y='30' width='50' height='10' fill='black'/>
 </svg>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
       body { background:#0b0f14; color:#fff; }
       .small-muted { color:#9aa0a6; }
+
       .timeline .item{ border:1px solid rgba(255,255,255,.12); border-radius:.75rem; padding:.75rem 1rem; }
       .timeline .past { opacity:.7; }
       .timeline .next { border-color:#ffc107; box-shadow:0 0 0 .15rem rgba(255,193,7,.15); }
       .arrow { color:#ffc107; }
+
+      /* Flash visuel du “prochain” */
+      .flash { animation: flashBorder 1200ms ease-out; }
+      @keyframes flashBorder {
+        0% { box-shadow: 0 0 0 .15rem rgba(255,193,7,.6); }
+        100% { box-shadow: 0 0 0 .15rem rgba(255,193,7,0); }
+      }
+
+      /* Boxes for content */
+      .box {
+        background: rgba(255,255,255,.04);
+        border: 1px solid rgba(255,255,255,.12);
+        border-radius: .75rem;
+        padding: .75rem 1rem;
+      }
+      .box-muted {
+        background: rgba(255,255,255,.02);
+        border: 1px solid rgba(255,255,255,.10);
+        border-radius: .75rem;
+        padding: .6rem .9rem;
+      }
+      .label-muted {
+        color:#9aa0a6;
+        font-size:.9rem;
+        margin-bottom:.35rem;
+      }
+      .prewrap { white-space: pre-wrap; }
     </style>
   </head>
   <body>
     <div class="container py-3">
+      <!-- En-tête avec badge et horloge -->
       <div class="d-flex align-items-center justify-content-between mb-3">
-        <h1 class="h5 m-0">Mode Animateur</h1>
-        <div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-warning text-dark">Mode Animateur</span>
           {% if n_tweets > 0 and n_messages > 0 %}
             <span class="badge bg-success">Scénario chargé</span>
           {% else %}
             <span class="badge bg-danger">Scénario vide</span>
           {% endif %}
         </div>
+        <div class="small-muted" id="rtclock" aria-label="Horloge temps réel"><i class="fas fa-clock me-1"></i><span id="clock-text"></span></div>
       </div>
 
       <div class="row g-3 mb-3">
@@ -39,10 +70,7 @@
       </div>
 
       <h2 class="h6 mb-2">Timeline (messages uniquement)</h2>
-
-      <div class="timeline d-flex flex-column gap-2 mb-4" id="timeline">
-        <!-- sections rendered by JS -->
-      </div>
+      <div class="timeline d-flex flex-column gap-2 mb-4" id="timeline"></div>
     </div>
 
     <script>
@@ -52,139 +80,222 @@
       const INITIAL_NEXT2 = {{ next2 | tojson }};
       const META_BY_ID    = {{ meta_by_id | tojson }};
 
+      // ---------- Horloge temps réel ----------
+     function updateClock(){
+  const el = document.getElementById('clock-text');
+  if (!el) return;
+  const now = new Date();
+  el.textContent = now.toLocaleString('fr-FR', { timeZone:'Europe/Paris' });
+}
+setInterval(updateClock, 1000); updateClock();
+
       // ---------- Utils ----------
       function hhmmFromMs(ms){
-        return new Date(ms).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+        return new Date(ms).toLocaleTimeString('fr-FR', {
+          timeZone: 'Europe/Paris', hour:'2-digit', minute:'2-digit'
+        });
       }
       function escapeHtml(s){
         return String(s ?? '')
           .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       }
 
-      // Merge helpers: normalize objects we’ll store in memory
+      // Essaye d’extraire emetteur/destinataire depuis label “Message à {dest} (de {emet})”
+      function parseFromLabel(label){
+        const out = { emetteur:"", destinataire:"" };
+        if (!label) return out;
+        const m = /Message\s+à\s+(.+?)\s+\(de\s+(.+?)\)/i.exec(label);
+        if (m) { out.destinataire = m[1]; out.emetteur = m[2]; }
+        return out;
+      }
+
+      // Normalise n’importe quel shape venant serveur/SSE
       function normalizeEvent(e){
-        // server provides: e.at (ISO), e.msg_id, e.label
-        // SSE provides: id, at_ms, label, reaction, commentaire
         if (!e) return null;
-        const id   = e.msg_id || e.id;
-        const ms   = ('at_ms' in e) ? e.at_ms : (e.at ? Date.parse(e.at) : NaN);
+        const id = e.msg_id || e.id;
+
+        // priorité à at_ms ; sinon at (ISO)
+        let ms = Number.isFinite(e.at_ms) ? e.at_ms : NaN;
+        if (!Number.isFinite(ms) && e.at) {
+          const d = new Date(e.at);
+          if (!isNaN(d)) ms = d.getTime();
+        }
+
+        // sources possibles pour emetteur/destinataire/stimuli
+        let emetteur = e.emetteur || "";
+        let destinataire = e.destinataire || "";
+        if (!emetteur || !destinataire) {
+          const parsed = parseFromLabel(e.label || "");
+          emetteur = emetteur || parsed.emetteur;
+          destinataire = destinataire || parsed.destinataire;
+        }
+        const stimuli = e.stimuli || ""; // si pas envoyé côté backend, on affichera rien
+
         const meta = META_BY_ID[id] || { reaction: e.reaction || "", commentaire: e.commentaire || "" };
+
         return {
           id,
-          label: e.label || "",
           at_ms: ms,
+          emetteur,
+          destinataire,
+          stimuli,
+          label: e.label || "",
           reaction: meta.reaction || "",
           commentaire: meta.commentaire || "",
         };
       }
 
-      // hold all events we have seen
+      // Mémoire des événements
       const events = [];
-
       function upsertEvent(ev){
         if (!ev || !ev.id) return;
         const i = events.findIndex(x => x.id === ev.id);
-        if (i >= 0) {
-          // keep earliest data (at_ms shouldn’t change), but update meta if needed
-          events[i] = { ...events[i], ...ev };
-        } else {
-          events.push(ev);
-        }
+        if (i >= 0) events[i] = { ...events[i], ...ev };
+        else events.push(ev);
       }
 
-      // seed with initial server-rendered lists
-      for (const e of (INITIAL_PAST5 || [])) {
-        const n = normalizeEvent(e);
-        if (n) upsertEvent(n);
-      }
-      if (INITIAL_NEXT1) {
-        const n = normalizeEvent(INITIAL_NEXT1);
-        if (n) upsertEvent(n);
-      }
-      if (INITIAL_NEXT2) {
-        const n = normalizeEvent(INITIAL_NEXT2);
-        if (n) upsertEvent(n);
-      }
+      // Seed initial
+      for (const e of (INITIAL_PAST5 || [])) { const n = normalizeEvent(e); if (n) upsertEvent(n); }
+      if (INITIAL_NEXT1) { const n = normalizeEvent(INITIAL_NEXT1); if (n) upsertEvent(n); }
+      if (INITIAL_NEXT2) { const n = normalizeEvent(INITIAL_NEXT2); if (n) upsertEvent(n); }
 
-      // Rendering
+      // ---------- Rendu ----------
       const timeline = document.getElementById('timeline');
+      let lastNext1Id = null;
 
-      function render(){
-  // sort by time
-  events.sort((a,b)=> a.at_ms - b.at_ms);
-  const now = Date.now();
-  const past = events.filter(e => e.at_ms < now);
-  const future = events.filter(e => e.at_ms >= now);
+      async function fetchUpcomingIfNeeded(){
+        const now = Date.now();
+        const future = events.filter(e => Number.isFinite(e.at_ms) && e.at_ms >= now);
+        if (future.length >= 2) return; // on a déjà next1 + next2
+        try {
+          const res = await fetch(`{{ url_for('animateur_upcoming') }}?limit=3`, { cache:'no-store' });
+          if (!res.ok) return;
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            for (const raw of data) {
+              const n = normalizeEvent(raw);
+              if (n) upsertEvent(n);
+            }
+          }
+        } catch {}
+      }
 
-  //const past5 = past.slice(-5);
-  const past5 = past.slice(-3);
-  const next1 = future[0] || null;
-  const next2 = future[1] || null;   // <-- always try to fetch one more
+      function headerLine(e){
+        // Ligne entête : [badge Stimulus #id]  emetteur → destinataire    (heure à droite)
+        return `
+          <div class="d-flex justify-content-between align-items-baseline">
+            <div>
+              <span class="badge bg-warning text-dark">Stimulus #${escapeHtml(e.id)}</span>
+              <strong class="ms-2">${escapeHtml(e.emetteur || '')} → ${escapeHtml(e.destinataire || '')}</strong>
+            </div>
+            <div class="small-muted">${hhmmFromMs(e.at_ms)}</div>
+          </div>
+        `;
+      }
 
-  function card(html, extraClass=""){
-    return `<div class="item ${extraClass}">${html}</div>`;
+      function stimulusBox(e){
+        if (!e.stimuli) return '';
+        return `
+          <div class="box mt-3">
+            <div class="label-muted"><i class="fas fa-bolt text-warning me-1"></i> Stimulus</div>
+            <div class="prewrap">${escapeHtml(e.stimuli)}</div>
+          </div>
+        `;
+      }
+
+      function metaLines(e){
+  const boxes = [];
+  if (e.reaction) {
+    boxes.push(`
+      <div class="col">
+        <div class="box-muted h-100">
+          <div class="label-muted"><i class="fas fa-search text-info me-1"></i> Réaction attendue</div>
+          <div class="prewrap">${escapeHtml(e.reaction)}</div>
+        </div>
+      </div>`);
   }
-  function badge(id){
-    return `<span class="badge bg-warning text-dark">${escapeHtml(id || '')}</span>`;
+  if (e.commentaire) {
+    boxes.push(`
+      <div class="col">
+        <div class="box-muted h-100">
+          <div class="label-muted"><i class="fas fa-comment-dots text-success me-1"></i> Commentaire</div>
+          <div class="prewrap">${escapeHtml(e.commentaire)}</div>
+        </div>
+      </div>`);
   }
-  function metaLines(e){
-    const parts = [];
-    if (e.reaction) parts.push(`<div class="mt-1">🔎 <span class="small-muted">réaction attendue :</span> ${escapeHtml(e.reaction)}</div>`);
-    if (e.commentaire) parts.push(`<div>📝 <span class="small-muted">commentaire :</span> ${escapeHtml(e.commentaire)}</div>`);
-    return parts.join('');
-  }
-
-  const blocks = [];
-
-  // --- past5 ---
-  if (past5.length) {
-    for (const e of past5) {
-      blocks.push(card(`
-        ${badge(e.id)}
-        <strong class="ms-2">${escapeHtml(e.label)}</strong>
-        <div class="small-muted">${hhmmFromMs(e.at_ms)}</div>
-        ${metaLines(e)}
-      `, "past"));
-    }
-  } else {
-    blocks.push(`<div class="text-secondary">Aucun message passé.</div>`);
-  }
-
-  // --- next1 ---
-  if (next1) {
-    blocks.push(card(`
-      <span class="arrow me-2">➜</span>
-      ${badge(next1.id)}
-      <strong class="ms-2">${escapeHtml(next1.label)}</strong>
-      <div class="small-muted">${hhmmFromMs(next1.at_ms)}</div>
-      ${metaLines(next1)}
-    `, "next"));
-  } else {
-    blocks.push(`<div class="text-secondary">Aucun prochain message.</div>`);
-  }
-
-  // --- next2 ---
-  if (next2) {
-    blocks.push(card(`
-      ${badge(next2.id)}
-      <strong class="ms-2">${escapeHtml(next2.label)}</strong>
-      <div class="small-muted">${hhmmFromMs(next2.at_ms)}</div>
-      ${metaLines(next2)}
-    `));
-  } else {
-    blocks.push(`<div class="text-secondary">Pas d’autre message planifié.</div>`);
-  }
-
-  timeline.innerHTML = blocks.join('\n');
+  if (!boxes.length) return '';
+  return `<div class="row mt-2 g-2">${boxes.join('')}</div>`;
 }
 
-      // initial render
+
+      function card(html, extraClass=""){
+        return `<div class="item ${extraClass}">${html}</div>`;
+      }
+
+      function render(){
+        const valid = events.filter(e => Number.isFinite(e.at_ms));
+        valid.sort((a,b)=> a.at_ms - b.at_ms);
+
+        const now = Date.now();
+        const past   = valid.filter(e => e.at_ms <  now);
+        const future = valid.filter(e => e.at_ms >= now);
+
+        const pastN = past.slice(-2);     // 3 précédents
+        const next1 = future[0] || null;
+        const next2 = future[1] || null;
+
+        const blocks = [];
+
+        // passés (3)
+        if (pastN.length) {
+          for (const e of pastN) {
+            blocks.push(card(`
+              ${headerLine(e)}
+              ${stimulusBox(e)}
+              ${metaLines(e)}
+            `, "past"));
+          }
+        } else {
+          blocks.push(`<div class="text-secondary">Aucun message passé.</div>`);
+        }
+
+        // prochain
+        if (next1) {
+          const needFlash = (lastNext1Id && next1.id !== lastNext1Id);
+          blocks.push(card(`
+            ${headerLine(next1)}
+            ${stimulusBox(next1)}
+            ${metaLines(next1)}
+          `, "next" + (needFlash ? " flash" : "")));
+          lastNext1Id = next1.id;
+        } else {
+          blocks.push(`<div class="text-secondary">Aucun prochain message.</div>`);
+          lastNext1Id = null;
+        }
+
+        // suivant après prochain
+        if (next2) {
+          blocks.push(card(`
+            ${headerLine(next2)}
+            ${stimulusBox(next2)}
+            ${metaLines(next2)}
+          `));
+        } else if (next1) {
+          // essayer de précharger si on a un next1 mais pas de next2
+          fetchUpcomingIfNeeded();
+        } else {
+          blocks.push(`<div class="text-secondary">Pas d’autre message planifié.</div>`);
+        }
+
+        timeline.innerHTML = blocks.join('\n');
+      }
+
+      // rendu initial + rafraîchissements
       render();
-
-      // Re-render every 10s so the “past/next” boundaries stay fresh
       setInterval(render, 10_000);
+      setInterval(fetchUpcomingIfNeeded, 15_000);
 
-      // ---------- SSE: live updates ----------
+      // ---------- SSE : alimente la timeline en temps réel ----------
       const evt = new EventSource("{{ url_for('stream_animateur') }}");
       evt.addEventListener('animateur', (e) => {
         try {
@@ -199,12 +310,13 @@
         } catch {}
       });
       evt.addEventListener('ping', () => {});
-      evt.onerror = () => { /* let the browser auto-reconnect */ };
+      evt.onerror = () => { /* auto-reconnect */ };
     </script>
-<footer class="text-center mt-5 p-3 bg-dark text-light">
-    <p>© 2025 <a href="https://github.com/JMousqueton/REMPAR" target="_blank">Julien Mousqueton</a></p>
-    <p>basé sur l'exercice REMPAR25 de l'ANSSI</p>
-  </footer>
+
+    <footer class="text-center mt-5 p-3 bg-dark text-light">
+      <p>© 2025 <a href="https://github.com/JMousqueton/REMPAR" target="_blank">Julien Mousqueton</a></p>
+      <p>basé sur l'exercice REMPAR25 de l'ANSSI</p>
+    </footer>
     {{ TRACKING | safe }}
   </body>
 </html>

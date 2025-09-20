@@ -253,11 +253,11 @@ def animateur():
                 rid = r.get("id", "")
                 if rid:
                     meta_by_id[rid] = {
-                        "reaction": r.get("reaction attendue", ""),
-                        "commentaire": r.get("commentaire", "")
+                        "reaction": r.get("reaction attendue", "") or "",
+                        "commentaire": r.get("commentaire", "") or "",
                     }
 
-        # timeline = messages uniquement
+        # timeline = messages uniquement (inclure emetteur/destinataire/stimuli)  # CHANGED
         events = []
         for m in MESSAGES:
             events.append({
@@ -265,6 +265,9 @@ def animateur():
                 "type": "message",
                 "label": f"Message à {m['destinataire']} (de {m['emetteur']})",
                 "msg_id": m["id"],
+                "emetteur": m.get("emetteur", ""),
+                "destinataire": m.get("destinataire", ""),
+                "stimuli": m.get("stimuli", ""),
             })
         events.sort(key=lambda e: e["at"])
 
@@ -276,18 +279,23 @@ def animateur():
     next1 = future[0] if future else None
     next2 = future[1] if len(future) > 1 else None
 
-    # --- formater au fuseau Europe/Paris (HH:MM:SS) ---
-    def with_local_str(e):
+    # packer au format déjà “digeste” pour le front (ISO + at_ms + champs utiles)  # NEW
+    def pack(e):
         if not e:
             return None
         return {
-            **e,
-            "at_str": e["at"].astimezone(APP_TZ).strftime("%H:%M:%S"),
+            "id": e["msg_id"],
+            "label": e["label"],
+            "at": e["at"].isoformat(),
+            "at_ms": int(e["at"].timestamp() * 1000),
+            "emetteur": e.get("emetteur", ""),
+            "destinataire": e.get("destinataire", ""),
+            "stimuli": e.get("stimuli", ""),
         }
 
-    past5 = [with_local_str(e) for e in past5]
-    next1 = with_local_str(next1)
-    next2 = with_local_str(next2)
+    past5 = [pack(e) for e in past5]
+    next1 = pack(next1)
+    next2 = pack(next2)
 
     return render_template(
         "animateur.html",
@@ -411,6 +419,50 @@ def messagerie():
     role = session.get('role')
     return render_template("messagerie.html", roles=ROLES, selected_role=role)
 
+@app.route("/animateur_upcoming")
+def animateur_upcoming():
+    """
+    Return the next upcoming messages (not yet due), regardless of time.
+    Query params:
+      - limit (int, default 3): how many future items to return
+    """
+    try:
+        limit = int(request.args.get("limit", "3"))
+    except ValueError:
+        limit = 3
+
+    now = datetime.now(tz=APP_TZ)
+    out = []
+    with STATE_LOCK:
+        # build meta map once
+        meta = {}
+        for r in RAW_ROWS:
+            if r.get("type") == "message":
+                rid = r.get("id", "")
+                if rid:
+                    meta[rid] = {
+                        "reaction": r.get("reaction attendue", "") or "",
+                        "commentaire": r.get("commentaire", "") or "",
+                    }
+
+        future = [m for m in MESSAGES if m["at"] >= now]
+        future.sort(key=lambda m: m["at"])
+        for m in future[:max(1, limit)]:
+            mm = meta.get(m["id"], {"reaction": "", "commentaire": ""})
+            out.append({
+                "id": m["id"],
+                "label": f"Message à {m.get('destinataire','')} (de {m.get('emetteur','')})",
+                "at": m["at"].isoformat(),
+                "at_ms": int(m["at"].timestamp() * 1000),
+                "emetteur": m.get("emetteur", ""),          # NEW
+                "destinataire": m.get("destinataire", ""),  # NEW
+                "stimuli": m.get("stimuli", ""),            # NEW
+                "reaction": mm["reaction"],
+                "commentaire": mm["commentaire"],
+            })
+
+    return app.response_class(app.json.dumps(out), mimetype="application/json")
+
 @app.route("/stream_animateur")
 def stream_animateur():
     """
@@ -435,7 +487,6 @@ def stream_animateur():
     def gen():
         yield "event: ping\ndata: {}\n\n"
         sent_ids = set()
-        # initial snapshot of metadata
         meta_by_id = build_meta_by_id()
 
         # 1) Send all past-due messages on connect
@@ -452,6 +503,9 @@ def stream_animateur():
                         "label": f"Message à {m.get('destinataire','')} (de {m.get('emetteur','')})",
                         "at": m["at"].isoformat(),
                         "at_ms": int(m["at"].timestamp() * 1000),
+                        "emetteur": m.get("emetteur",""),          # NEW
+                        "destinataire": m.get("destinataire",""),  # NEW
+                        "stimuli": m.get("stimuli",""),            # NEW
                         "reaction": meta.get("reaction",""),
                         "commentaire": meta.get("commentaire",""),
                     })
@@ -464,7 +518,6 @@ def stream_animateur():
         while True:
             now = datetime.now(tz=APP_TZ)
             due = []
-            # refresh metadata periodically (or you could keep a timestamp & refresh less often)
             meta_by_id = build_meta_by_id()
             with STATE_LOCK:
                 for m in MESSAGES:
@@ -477,6 +530,9 @@ def stream_animateur():
                             "label": f"Message à {m.get('destinataire','')} (de {m.get('emetteur','')})",
                             "at": m["at"].isoformat(),
                             "at_ms": int(m["at"].timestamp() * 1000),
+                            "emetteur": m.get("emetteur",""),          # NEW
+                            "destinataire": m.get("destinataire",""),  # NEW
+                            "stimuli": m.get("stimuli",""),            # NEW
                             "reaction": meta.get("reaction",""),
                             "commentaire": meta.get("commentaire",""),
                         })
@@ -487,8 +543,6 @@ def stream_animateur():
             time.sleep(1)
 
     return app.response_class(gen(), mimetype="text/event-stream")
-
-
 
 @app.route("/stream_tweets")
 def stream_tweets():
