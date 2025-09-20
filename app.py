@@ -66,6 +66,20 @@ def get_active_decompte_end(now: Optional[datetime] = None) -> Optional[datetime
                 return ev["end"]
     return None
 
+# --- NEW: small helper to format the SSE event for current décompte state
+def _sse_decompte_event():
+    """
+    Returns (event_name, data_str) for SSE:
+      - ("decompte", {"target_iso": ...}) when a countdown is active
+      - ("decompte_end", {}) when no countdown is active
+    """
+    end_dt = get_active_decompte_end()
+    if end_dt:
+        payload = app.json.dumps({"target_iso": end_dt.astimezone(APP_TZ).isoformat()})
+        return ("decompte", payload)
+    else:
+        return ("decompte_end", app.json.dumps({}))
+
 def norm(s: Optional[str]) -> str:
     if s is None:
         return ""
@@ -283,7 +297,7 @@ def reset():
 
 @app.route("/")
 def index():
-    # NEW: if a decompte is active, show countdown instead of normal index
+    # If a decompte is active, show countdown instead of normal index
     end_dt = get_active_decompte_end()
     if end_dt:
         return render_template("countdown.html", target_iso=end_dt.astimezone(APP_TZ).isoformat())
@@ -356,7 +370,7 @@ def admin():
 
 @app.route("/socialmedia")
 def socialmedia():
-    # NEW: force countdown if active
+    # Force countdown if active
     end_dt = get_active_decompte_end()
     if end_dt:
         return render_template("countdown.html", target_iso=end_dt.astimezone(APP_TZ).isoformat())
@@ -364,7 +378,7 @@ def socialmedia():
 
 @app.route("/messagerie", methods=["GET", "POST"])
 def messagerie():
-    # NEW: force countdown if active
+    # Force countdown if active
     end_dt = get_active_decompte_end()
     if end_dt:
         return render_template("countdown.html", target_iso=end_dt.astimezone(APP_TZ).isoformat())
@@ -383,7 +397,15 @@ def messagerie():
 def stream_tweets():
     def gen():
         yield "event: ping\ndata: {}\n\n"
+
+        # Send decompte state on connect
+        ev, data = _sse_decompte_event()
+        yield f"event: {ev}\ndata: {data}\n\n"
+
         sent_ids = set()
+        last_decompte_key = None  # track state changes
+
+        # Send past tweets
         now = datetime.now(tz=APP_TZ)
         due = []
         with STATE_LOCK:
@@ -403,7 +425,16 @@ def stream_tweets():
             payload = app.json.dumps(due)
             yield f"event: tweet\ndata: {payload}\n\n"
 
+        # Stream new tweets + decompte state changes
         while True:
+            # Emit decompte updates if changed
+            end_dt = get_active_decompte_end()
+            key = end_dt.isoformat() if end_dt else "none"
+            if key != last_decompte_key:
+                last_decompte_key = key
+                ev, data = _sse_decompte_event()
+                yield f"event: {ev}\ndata: {data}\n\n"
+
             now = datetime.now(tz=APP_TZ)
             due = []
             with STATE_LOCK:
@@ -435,7 +466,15 @@ def stream_messages():
 
     def gen():
         yield "event: ping\ndata: {}\n\n"
+
+        # Send decompte state on connect
+        ev, data = _sse_decompte_event()
+        yield f"event: {ev}\ndata: {data}\n\n"
+
         sent_ids = set()
+        last_decompte_key = None
+
+        # past messages
         now = datetime.now(tz=APP_TZ)
         due = []
         with STATE_LOCK:
@@ -456,7 +495,16 @@ def stream_messages():
             payload = app.json.dumps(due)
             yield f"event: message\ndata: {payload}\n\n"
 
+        # new messages + decompte changes
         while True:
+            # Emit decompte updates if changed
+            end_dt = get_active_decompte_end()
+            key = end_dt.isoformat() if end_dt else "none"
+            if key != last_decompte_key:
+                last_decompte_key = key
+                ev, data = _sse_decompte_event()
+                yield f"event: {ev}\ndata: {data}\n\n"
+
             now = datetime.now(tz=APP_TZ)
             due = []
             with STATE_LOCK:

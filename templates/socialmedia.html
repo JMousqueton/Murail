@@ -291,7 +291,8 @@
 
       // ----- SSE -----
       const evt = new EventSource("{{ url_for('stream_tweets') }}");
-      // server sends named 'tweet' events (with initial replay)
+
+      // normal tweets (including initial replay)
       evt.addEventListener('tweet', (e)=>{
         try{
           const payload = JSON.parse(e.data);
@@ -299,6 +300,7 @@
           for (const t of payload){ addTweet(t); }
         }catch{}
       });
+
       // fallback if server ever uses default 'message'
       evt.onmessage = (e) => {
         try{
@@ -306,6 +308,16 @@
           if (Array.isArray(payload)) for (const t of payload) addTweet(t);
         }catch{}
       };
+
+      // 🔴 NEW: live switch to countdown when a "décompte" starts
+      evt.addEventListener('decompte', (e) => {
+        try {
+          const { target_iso } = JSON.parse(e.data || "{}");
+          if (target_iso) window.location.replace("/"); // index will render countdown
+        } catch {}
+      });
+      // Optional: event when décompte ends (no redirect needed here)
+      evt.addEventListener('decompte_end', () => {});
     </script>
     {{ TRACKING | safe }}
   </body>

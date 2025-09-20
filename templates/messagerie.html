@@ -163,16 +163,15 @@
 
         li.innerHTML = `
           <div class="d-flex justify-content-between align-items-baseline">
-  <strong>Stimulus #${escapeHtml(m.id || '')}</strong>
-  <span class="small-muted ms-2">${when}</span>
-</div>
-
-<div class="d-flex align-items-center justify-content-between">
-  <div>
-    <span class="badge bg-success">${escapeHtml(m.emetteur||'')}</span> → <span class="badge bg-danger ms-2">${escapeHtml(m.destinataire||'')}</span>
-  </div>
-  <span class="status-badge">${renderProcessedBadge(processed)}</span>
-</div>
+            <strong>Stimulus #${escapeHtml(m.id || '')}</strong>
+            <span class="small-muted ms-2">${when}</span>
+          </div>
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <span class="badge bg-success">${escapeHtml(m.emetteur||'')}</span> → <span class="badge bg-danger ms-2">${escapeHtml(m.destinataire||'')}</span>
+            </div>
+            <span class="status-badge">${renderProcessedBadge(processed)}</span>
+          </div>
         `;
 
         li.addEventListener('click', ()=>showMessage(m));
@@ -219,7 +218,6 @@
           const res = await fetch(`/messages?role=${encodeURIComponent(CURRENT_ROLE)}&limit=100`, { cache: 'no-store' });
           const data = await res.json();
           if (Array.isArray(data) && data.length) {
-            // Add oldest first so newest ends on top after prepend
             for (const m of data) addMessageToList(m);
           }
           if (idle && mailList.childElementCount > 0) idle.style.display = 'none';
@@ -233,17 +231,26 @@
 
         // SSE connection scoped to the selected role
         const evt = new EventSource(`{{ url_for('stream_messages') }}?role=${encodeURIComponent('{{ selected_role }}')}`);
+
+        // Normal message stream
         evt.addEventListener('message', (e) => {
           const payload = JSON.parse(e.data);
           if (payload.length > 0 && idle) idle.style.display = 'none';
           for (const m of payload) { addMessageToList(m); }
         });
+
+        // 🔴 NEW: listen for live "décompte" switch
+        evt.addEventListener('decompte', (e) => {
+          try {
+            const { target_iso } = JSON.parse(e.data || "{}");
+            if (target_iso) window.location.replace("/"); // index will render countdown
+          } catch {}
+        });
+        evt.addEventListener('decompte_end', () => { /* no-op */ });
+
         // optional heartbeat
         evt.addEventListener('ping', () => {});
-        evt.onerror = () => {
-          // let browser auto-reconnect; optionally show a subtle hint
-          // console.debug('SSE error; browser will attempt to reconnect');
-        };
+        evt.onerror = () => { /* browser will auto-reconnect */ };
       })();
     </script>
     {% endif %}
