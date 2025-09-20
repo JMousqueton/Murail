@@ -32,7 +32,7 @@ ROLES = [
 
 DATA_PATH = os.environ.get("SCENARIO_XLSX", os.path.join("Sample", "chronogramme.xlsx"))
 ADMIN_PASSWORD     = os.environ.get("ADMIN_PASSWORD", "changeme_admin")
-OBSERVER_PASSWORD  = os.environ.get("OBSERVER_PASSWORD", "changeme_observer")
+ANIMATOR_PASSWORD  = os.environ.get("ANIMATOR_PASSWORD", "changeme_animator")
 APP_ID             = os.environ.get("APP_ID", "REMPAR-DEMO-LOCAL")
 TRACKING           = os.environ.get("TRACKING", "")
 
@@ -153,7 +153,7 @@ def load_excel(file_like) -> None:
             emet = row[cols["emetteur"]]
             stim = row[cols["stimuli"]]
 
-            # Keep raw row for observer
+            # Keep raw row for animator
             raw = {
                 "id": (str(row[cols["id"]]).strip() if "id" in cols and pd.notna(row[cols["id"]]) else ""),
                 "horaire": row[cols["horaire"]],
@@ -225,21 +225,21 @@ def load_excel(file_like) -> None:
         DECOMPTE_EVENTS.clear(); DECOMPTE_EVENTS.extend(decompte_events)  # NEW
         SENT_TWEET_IDS.clear(); SENT_MESSAGE_IDS.clear()
 
-@app.route("/observateur", methods=["GET", "POST"])
-def observateur():
-    if not session.get("is_observer"):
+@app.route("/animateur", methods=["GET", "POST"])
+def animateur():
+    if not session.get("is_animator"):
         if request.method == "POST":
             pwd = request.form.get("password")
-            if pwd == OBSERVER_PASSWORD:
-                session["is_observer"] = True
-                return redirect(url_for("observateur"))
+            if pwd == ANIMATOR_PASSWORD:
+                session["is_animator"] = True
+                return redirect(url_for("animateur"))
             else:
                 flash("Mot de passe incorrect")
-                return redirect(url_for("observateur"))
+                return redirect(url_for("animateur"))
         return render_template(
             "admin_login.html",
-            action=url_for("observateur"),
-            prefill_password=(OBSERVER_PASSWORD if DEMO else "")
+            action=url_for("animateur"),
+            prefill_password=(ANIMATOR_PASSWORD if DEMO else "")
         )
 
     with STATE_LOCK:
@@ -290,7 +290,7 @@ def observateur():
     next2 = with_local_str(next2)
 
     return render_template(
-        "observateur.html",
+        "animateur.html",
         n_tweets=n_tw, n_messages=n_msg,
         past5=past5, next1=next1, next2=next2,
         meta_by_id=meta_by_id,
@@ -411,10 +411,10 @@ def messagerie():
     role = session.get('role')
     return render_template("messagerie.html", roles=ROLES, selected_role=role)
 
-@app.route("/stream_observateur")
-def stream_observateur():
+@app.route("/stream_animateur")
+def stream_animateur():
     """
-    Streams *messages only* (stimuli) for the observer timeline, with metadata.
+    Streams *messages only* (stimuli) for the animator timeline, with metadata.
     On connect: sends all past-due messages (once).
     Then: streams each message at its due time.
     """
@@ -458,7 +458,7 @@ def stream_observateur():
                     sent_ids.add(m["id"])
         if due:
             payload = app.json.dumps(due)
-            yield f"event: observateur\ndata: {payload}\n\n"
+            yield f"event: animateur\ndata: {payload}\n\n"
 
         # 2) Stream new messages as they become due
         while True:
@@ -483,7 +483,7 @@ def stream_observateur():
                         sent_ids.add(m["id"])
             if due:
                 payload = app.json.dumps(due)
-                yield f"event: observateur\ndata: {payload}\n\n"
+                yield f"event: animateur\ndata: {payload}\n\n"
             time.sleep(1)
 
     return app.response_class(gen(), mimetype="text/event-stream")

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Observateur – Simulation</title>
+    <title>Animateur – Simulation</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
   <circle cx='30' cy='50' r='20' stroke='black' stroke-width='5' fill='lightgray'/>
@@ -23,7 +23,7 @@
   <body>
     <div class="container py-3">
       <div class="d-flex align-items-center justify-content-between mb-3">
-        <h1 class="h5 m-0">Mode Observateur</h1>
+        <h1 class="h5 m-0">Mode Animateur</h1>
         <div>
           {% if n_tweets > 0 and n_messages > 0 %}
             <span class="badge bg-success">Scénario chargé</span>
@@ -182,8 +182,8 @@
       setInterval(render, 10_000);
 
       // ---------- SSE: live updates ----------
-      const evt = new EventSource("{{ url_for('stream_observateur') }}");
-      evt.addEventListener('observateur', (e) => {
+      const evt = new EventSource("{{ url_for('stream_animateur') }}");
+      evt.addEventListener('animateur', (e) => {
         try {
           const payload = JSON.parse(e.data);
           if (Array.isArray(payload)) {

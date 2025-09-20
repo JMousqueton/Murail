@@ -21,7 +21,7 @@ Elle peut être utilisée lors de formations, de jeux de rôle ou d’exercices 
 - Fournir aux participants un environnement simple d’accès, utilisable via un navigateur web.
 - Permettre aux formateurs / encadrants de suivre la progression de l’exercice :
   - Une **console administrateur** pour charger et suivre le scénario.
-  - Une **vue observateur** permettant d’analyser en temps réel l’évolution de l’exercice.
+  - Une **vue animateur** permettant d’analyser en temps réel l’évolution de l’exercice.
 
 ---
 
@@ -29,7 +29,7 @@ Elle peut être utilisée lors de formations, de jeux de rôle ou d’exercices 
 
 ### 🔑 Authentification
 - Accès **administrateur** protégé par mot de passe.
-- Accès **observateur** protégé par un mot de passe distinct.
+- Accès **animateur** protégé par un mot de passe distinct.
 - Gestion des rôles via la messagerie (Communication, Décision, Informatique, RH, Juridique/Finance, etc.).
 
 ### 📊 Administration
@@ -50,7 +50,7 @@ Elle peut être utilisée lors de formations, de jeux de rôle ou d’exercices 
 - Ajout d’un **mode “tous”** pour les messages destinés à l’ensemble des rôles.
 - Chaque utilisateur peut marquer un message comme **“Traité”** (stocké en local sur son navigateur, sans impact sur les autres).
 
-### 👁️ Observateur
+### 👁️ Animateur
 - Accès réservé par mot de passe.
 - Timeline affichant uniquement les **messages** (pas les tweets).
 - Pour chaque message :
@@ -72,7 +72,7 @@ Le fichier Excel doit contenir au minimum les colonnes suivantes :
 - `destinataire` : rôle concerné (ou `tous` pour diffusion générale).
 - `stimuli` : contenu du message ou du tweet.
 - `reaction attendue` *(optionnel)* : ce qui est attendu de l’équipe.
-- `commentaire` *(optionnel)* : note pour l’observateur.
+- `commentaire` *(optionnel)* : note pour l’animateur.
 - `livrable` *(optionnel)* : sortie attendue (communiqué, rapport, etc.).
 
 ---
@@ -103,7 +103,7 @@ pip install -r requirements.txt
 Créer un fichier `.env` avec les variables nécessaires :
 ```env
 ADMIN_PASSWORD=MonMotDePasseAdmin
-OBSERVER_PASSWORD=MonMotDePasseObservateur
+OBSERVER_PASSWORD=MonMotDePasseAnimateur
 APP_ID=SIM-REMPAR25
 FLASK_SECRET=ma-cle-ultra-secrete
 ```
@@ -121,7 +121,7 @@ L’application est alors disponible sur [http://localhost:5000](http://localhos
 
 - **Organisateurs d’exercices de crise** (RSSI, DSI, formateurs).
 - **Équipes de communication, juridique, RH, Finance, technique** lors d’un entraînement.
-- **Observateurs** chargés d’évaluer la réaction et la coordination.
+- **Animateurs** chargés d’évaluer la réaction et la coordination.
 
 ---
 
@@ -132,7 +132,7 @@ Une instance de démonstration est disponible à l’adresse suivante :
 
 En mode démo :
 
-- L’accès à l’**Observateur** ne nécessite pas de mot de passe.
+- L’accès à l’**Animateur** ne nécessite pas de mot de passe.
 - L'accès à l'**administrateur** n'est pas accessible 
 - Les autres fonctionnalités (Messagerie, Réseaux sociaux) restent accessibles pour tester le scénario.
 - Ce mode est uniquement prévu pour découvrir l’outil.

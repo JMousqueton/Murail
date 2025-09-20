@@ -72,6 +72,8 @@ Chaque ligne correspond à un événement.
 
 ### 📝 Colonnes optionnelles
 
+Ces colonnes sont uniquement à destination du role d'animateur/facillitateur 
+
 #### `Réaction attendue`
 - Indique la réponse souhaitée des participants.  
 - Exemple : *"Prévenir le service communication"*.
@@ -147,7 +149,7 @@ L’application REMPAR propose plusieurs interfaces web permettant aux participa
 
 ---
 
-### 🔎 Observateur (`/observateur`)
+### 🔎 Observateur (`/animateur`)
 
 - Réservé aux **animateurs / contrôleurs**.
 - Accès via mot de passe (ou prérempli en mode démo).
@@ -157,7 +159,7 @@ L’application REMPAR propose plusieurs interfaces web permettant aux participa
   - Les **2 prochains messages** programmés.
   - Affichage des **réactions attendues** et **commentaires** définis dans le fichier Excel.
 
-![Observateur](img/observateur.png)
+![Observateur](img/animateur.png)
 
 ---
 
