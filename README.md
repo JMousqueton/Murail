@@ -1,5 +1,5 @@
 # REMPAR
-Plateforme de simulation de communication de crise inspirée de l’exercice massifié REMPAR25 de l’ANSSI
+Plateforme de simulation de crise inspirée de l’exercice massifié REMPAR25 de l’ANSSI
 
 # Simulation de crise – Exercice inspiré de REMPAR25
 
