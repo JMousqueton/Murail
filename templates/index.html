@@ -26,7 +26,9 @@
   </head>
   <body class="text-light">
     <div class="container py-4">
-      <h1 class="h4 mb-4"><i class="fa-solid fa-chess"></i> Simulation d’exercice de crise</h1>
+      <h1 class="h2 mb-5" style="margin-bottom:3.5rem;">
+  <i class="fa-solid fa-chess"></i> Simulation d’exercice de crise
+</h1>
 
 <!-- Box arrondie -->
 <div class="card bg-dark border border-secondary rounded-4 shadow-sm my-4">
@@ -62,7 +64,7 @@
     </div>
   </a>
 </div>
-
+<div><hr></div>
 <div class="col-12 col-md-6">
   <a href="{{ url_for('animateur') }}" target="_blank" class="text-decoration-none">
     <div class="card bg-dark border border-secondary h-100 shadow-sm hover-shadow">
@@ -129,7 +131,7 @@
     <footer class="text-center mt-5 p-3 bg-dark text-light">
     <p>© 2025 <a href="https://github.com/JMousqueton/REMPAR" target="_blank">Julien Mousqueton</a></p>
     <p>basé sur l'exercice REMPAR25 de l'ANSSI</p>
-    <p class="small">
+    <p class="small"><i class="fa-solid fa-recycle text-danger"></i>
     <a href="{{ url_for('reset') }}" class="link-danger text-decoration-none">
       Réinitialiser la session
     </a>

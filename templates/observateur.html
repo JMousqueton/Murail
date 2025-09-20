@@ -4,12 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Observateur – Notation & Commentaires</title>
-
+ <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+  <circle cx='30' cy='50' r='20' stroke='black' stroke-width='5' fill='lightgray'/>
+  <circle cx='70' cy='50' r='20' stroke='black' stroke-width='5' fill='lightgray'/>
+  <rect x='25' y='30' width='50' height='10' fill='black'/>
+</svg>">
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Font Awesome (for thumbs & icons) -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" rel="stylesheet">
 
     <style>
       :root { --cc-border: rgba(255,255,255,.12); --cc-muted:#9aa0a6; }
@@ -66,6 +70,33 @@
 
       <div id="list" class="d-flex flex-column gap-3"></div>
     </div>
+<script>
+// --- Helpers d’icône de rôle (Font Awesome) ---
+function normNoAccent(s){
+  return String(s || '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu,'')
+    .toLowerCase();
+}
+function iconClassForRole(role){
+  const r = normNoAccent(role);
+  if (!r) return 'fa-user';
+
+  if (r === 'tous' || r.includes('global')) return 'fa-globe';
+  if (r.includes('commun'))                 return 'fa-bullhorn';     // Communication
+  if (r.includes('decis'))                  return 'fa-user-tie';     // Décision
+  if (r.includes('inform') || r === 'it')   return 'fa-laptop-code';  // Informatique
+  if (r.includes('jurid') || r.includes('finan')) return 'fa-scale-balanced'; // Juridique / Finance
+  if (r.includes('ressources') || r === 'rh')     return 'fa-users';  // Ressources Humaines
+  if (r.includes('metier'))                 return 'fa-briefcase';    // Métier
+
+  return 'fa-user';
+}
+function roleWithIconHTML(role){
+  const cls = iconClassForRole(role);
+  return `<i class="fa-solid ${cls} me-1"></i>${escapeHtml(role || '')}`;
+}
+</script>
 
     <script>
       // ---------- Initial data from server ----------
@@ -158,7 +189,7 @@
           <div class="d-flex justify-content-between align-items-baseline mb-1">
             <div>
               <span class="badge bg-warning text-dark">Stimulus #${escapeHtml(e.id)}</span>
-              <strong class="ms-2">${escapeHtml(e.emetteur||'')} → ${escapeHtml(e.destinataire||'')}</strong>
+              <strong class="ms-2">${escapeHtml(e.emetteur||'')} → ${roleWithIconHTML(e.destinataire||'')}</strong>
             </div>
             <span class="badge text-bg-primary time-pill">${hhmm(e.at_ms)}</span>
           </div>

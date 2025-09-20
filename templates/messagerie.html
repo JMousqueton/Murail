@@ -12,6 +12,7 @@
 </svg>">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" rel="stylesheet">
     <style>
       :root{ --cc-border: rgba(255,255,255,.12); --cc-muted:#9aa0a6; }
       body{ background:#0b0f14; color:#fff; }
@@ -34,9 +35,13 @@
         <h1 class="h5 m-0">Messagerie</h1>
 
         {% if selected_role %}
-          <form action="{{ url_for('messagerie_change') }}" method="post">
-            <button class="btn btn-sm btn-outline-light">Changement de profil</button>
-          </form>
+          <div class="d-flex align-items-center gap-2">
+            <!-- 🔔 Toggle son -->
+            <button id="soundToggle" type="button" class="btn btn-sm btn-outline-light" title="Activer/Désactiver le son">🔔 Son: <span id="soundState">ON</span></button>
+            <form action="{{ url_for('messagerie_change') }}" method="post" class="m-0">
+              <button class="btn btn-sm btn-outline-light">Changement de profil</button>
+            </form>
+          </div>
         {% else %}
           <div class="small-muted">Choisissez un profil pour commencer</div>
         {% endif %}
@@ -96,6 +101,40 @@
       {% endif %}
     </div>
 
+    <!-- 🔈 Audio caché pour notifications -->
+    <audio id="notifSound" preload="auto">
+      <source src="/static/sounds/beep_short.ogg" type="audio/ogg">
+    </audio>
+
+    <script>
+// --- Helpers d’icône de rôle (Font Awesome) ---
+function normNoAccent(s){
+  return String(s || '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu,'')
+    .toLowerCase();
+}
+function iconClassForRole(role){
+  const r = normNoAccent(role);
+  if (!r) return 'fa-user';
+
+  if (r === 'tous' || r.includes('global')) return 'fa-globe';
+  if (r.includes('commun'))                 return 'fa-bullhorn';     // Communication
+  if (r.includes('decis'))                  return 'fa-user-tie';     // Décision
+  if (r.includes('inform') || r === 'it')   return 'fa-laptop-code';  // Informatique
+  if (r.includes('jurid') || r.includes('finan')) return 'fa-scale-balanced'; // Juridique / Finance
+  if (r.includes('ressources') || r === 'rh')     return 'fa-users';  // Ressources Humaines
+  if (r.includes('metier'))                 return 'fa-briefcase';    // Métier
+
+  return 'fa-user';
+}
+function roleWithIconHTML(role){
+  const cls = iconClassForRole(role);
+  return `<i class="fa-solid ${cls} me-1"></i>${escapeHtml(role || '')}`;
+}
+</script>
+
+
     {% if selected_role %}
     <script>
       const mailList = document.getElementById('mail-list');
@@ -148,10 +187,42 @@
         if (hdr) hdr.innerHTML = renderProcessedBadge(processed);
       }
 
+      // ========== Son : ON/OFF mémorisé ==========
+      const SOUND_LS_KEY = 'messagerie_sound_enabled';
+      function isSoundEnabled(){
+        const v = localStorage.getItem(SOUND_LS_KEY);
+        return v === null ? true : v === '1';
+      }
+      function setSoundEnabled(on){
+        localStorage.setItem(SOUND_LS_KEY, on ? '1' : '0');
+        const st = document.getElementById('soundState');
+        if (st) st.textContent = on ? 'ON' : 'OFF';
+      }
+      function playNotification(){
+        if (!isSoundEnabled()) return;
+        const audio = document.getElementById('notifSound');
+        if (!audio) return;
+        // Débloquer l'autoplay si besoin (après une première interaction)
+        audio.currentTime = 0;
+        audio.play().catch(()=>{});
+      }
+      // bouton toggle
+      (function initSoundToggle(){
+        const btn = document.getElementById('soundToggle');
+        if (!btn) return;
+        setSoundEnabled(isSoundEnabled()); // init label
+        btn.addEventListener('click', ()=>{
+          setSoundEnabled(!isSoundEnabled());
+          // petite lecture muette pour débloquer l’autoplay sur certains navigateurs
+          const a = document.getElementById('notifSound');
+          if (a) a.play().then(()=>{ a.pause(); a.currentTime = 0; }).catch(()=>{});
+        });
+      })();
+
       // ----- list + detail rendering -----
       function addMessageToList(m){
-        if (!m || !m.id) return;
-        if (seen.has(m.id)) return;
+        if (!m || !m.id) return false;
+        if (seen.has(m.id)) return false;
         seen.add(m.id);
 
         const li = document.createElement('div');
@@ -168,7 +239,7 @@
           </div>
           <div class="d-flex align-items-center justify-content-between">
             <div>
-              <span class="badge bg-success">${escapeHtml(m.emetteur||'')}</span> → <span class="badge bg-danger ms-2">${escapeHtml(m.destinataire||'')}</span>
+              <span class="badge bg-success">${escapeHtml(m.emetteur||'')}</span> → <span class="badge bg-danger ms-2">${roleWithIconHTML(m.destinataire||'')}</span>
             </div>
             <span class="status-badge">${renderProcessedBadge(processed)}</span>
           </div>
@@ -178,6 +249,7 @@
         mailList.prepend(li);
         if (idle) idle.style.display = 'none';
         if (mailList.childElementCount === 1) showMessage(m);
+        return true; // a bien ajouté
       }
 
       function showMessage(m){
@@ -191,7 +263,7 @@
             <div id="detail-processed-badge">${renderProcessedBadge(processed)}</div>
           </div>
           <div class="mb-1"><span class="badge bg-success">Émetteur</span> ${escapeHtml(m.emetteur||'')}</div>
-          <div class="mb-1"><span class="badge bg-danger">Destinataire</span> ${escapeHtml(m.destinataire||'')}</div>
+          <div class="mb-1"><span class="badge bg-danger">Destinataire</span> ${roleWithIconHTML(m.destinataire||'')}</div>
           <div class="mb-2"><strong>Horaire de distribution :</strong> ${when}</div>
 
           <div class="form-check form-switch my-2">
@@ -224,7 +296,7 @@
           const res = await fetch(`/messages?role=${encodeURIComponent(CURRENT_ROLE)}&limit=100`, { cache: 'no-store' });
           const data = await res.json();
           if (Array.isArray(data) && data.length) {
-            for (const m of data) addMessageToList(m);
+            for (const m of data) addMessageToList(m); // pas de son sur l'historique
           }
           if (idle && mailList.childElementCount > 0) idle.style.display = 'none';
         } catch (e) {
@@ -238,32 +310,35 @@
         // SSE connection scoped to the selected role
         const evt = new EventSource(`{{ url_for('stream_messages') }}?role=${encodeURIComponent('{{ selected_role }}')}`);
 
-        // Normal message stream
+        // Flux de messages
         evt.addEventListener('message', (e) => {
           const payload = JSON.parse(e.data);
-          if (payload.length > 0 && idle) idle.style.display = 'none';
-          for (const m of payload) { addMessageToList(m); }
+          let added = 0;
+          if (Array.isArray(payload) && payload.length) {
+            for (const m of payload) { if (addMessageToList(m)) added++; }
+          }
+          if (added > 0) playNotification(); // "ding" uniquement si on a ajouté quelque chose
         });
 
-        // 🔴 NEW: listen for live "décompte" switch
+        // Countdown overlay (décompte)
         evt.addEventListener('decompte', (e) => {
           try {
             const { target_iso } = JSON.parse(e.data || "{}");
-            if (target_iso) window.location.replace("/"); // index will render countdown
+            if (target_iso) window.location.replace("/"); // index affichera le décompte
           } catch {}
         });
         evt.addEventListener('decompte_end', () => { /* no-op */ });
 
-        // optional heartbeat
+        // heartbeat
         evt.addEventListener('ping', () => {});
-        evt.onerror = () => { /* browser will auto-reconnect */ };
+        evt.onerror = () => { /* auto-reconnect */ };
       })();
     </script>
     {% endif %}
     <footer class="text-center mt-5 p-3 bg-dark text-light">
-    <p>© 2025 <a href="https://github.com/JMousqueton/REMPAR" target="_blank">Julien Mousqueton</a></p>
-    <p>basé sur l'exercice REMPAR25 de l'ANSSI</p>
-  </footer>
+      <p>© 2025 <a href="https://github.com/JMousqueton/REMPAR" target="_blank">Julien Mousqueton</a></p>
+      <p>basé sur l'exercice REMPAR25 de l'ANSSI</p>
+    </footer>
     {{ TRACKING | safe }}
   </body>
 </html>

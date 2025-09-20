@@ -87,18 +87,60 @@ def norm(s: Optional[str]) -> str:
     return unidecode(str(s)).strip()
 
 def parse_horaire(val) -> datetime:
+    """
+    Parse an Excel 'horaire' cell into a timezone-aware datetime in APP_TZ.
+
+    Accepts:
+      - strings like "HH:MM", "HH:MM:SS", "02:15:00 PM"
+      - pandas/py datetime objects
+      - Excel serial numbers (including time-only fractions)
+    For time-only inputs, the date defaults to today (local).
+    """
+    today = date.today()
+    default_dt = datetime.combine(today, datetime.min.time())
+
+    # 1) Pandas/py datetime-like
     if isinstance(val, (datetime, pd.Timestamp)):
         dt = pd.to_datetime(val).to_pydatetime()
+
+    # 2) Excel serials (date+time as days since 1899-12-30; time-only as fraction of a day)
+    elif isinstance(val, (int, float)) and not pd.isna(val):
+        try:
+            # This handles both whole days and fractions (time-only)
+            dt = pd.to_datetime(val, unit="D", origin="1899-12-30").to_pydatetime()
+        except Exception:
+            # Fallback: treat as fraction of day
+            secs = int(round(float(val) * 86400)) % 86400
+            dt = default_dt + timedelta(seconds=secs)
+
+    # 3) Strings (HH:MM, HH:MM:SS, with/without AM/PM, etc.)
     else:
         txt = str(val).strip()
         if not txt:
             raise ValueError("horaire manquant")
-        dt = dtparser.parse(txt, dayfirst=True, default=datetime.combine(date.today(), datetime.min.time()))
+
+        # dateutil will respect the provided default for missing Y/M/D.
+        # dayfirst=True is harmless for time-only; fuzzy helps with stray spaces.
+        dt = dtparser.parse(
+            txt,
+            dayfirst=True,
+            default=default_dt,
+            fuzzy=True
+        )
+
+        # If the parsed date looks like an Excel epoch artifact (e.g., year < 1970)
+        # and the input had no explicit date, pin to today but keep time.
+        if dt.year < 1970 and not re.search(r"\d{4}-\d{1,2}-\d{1,2}|\d{1,2}/\d{1,2}/\d{2,4}", txt):
+            dt = default_dt.replace(hour=dt.hour, minute=dt.minute, second=dt.second, microsecond=dt.microsecond)
+
+    # Ensure timezone-aware in APP_TZ
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=APP_TZ)
     else:
         dt = dt.astimezone(APP_TZ)
+
     return dt
+
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
