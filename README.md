@@ -50,7 +50,7 @@ Elle peut être utilisée lors de formations, de jeux de rôle ou d’exercices 
 - Ajout d’un **mode “tous”** pour les messages destinés à l’ensemble des rôles.
 - Chaque utilisateur peut marquer un message comme **“Traité”** (stocké en local sur son navigateur, sans impact sur les autres).
 
-### 👁️ Animateur
+### 🪄 Animateur
 - Accès réservé par mot de passe.
 - Timeline affichant uniquement les **messages** (pas les tweets).
 - Pour chaque message :
@@ -58,6 +58,13 @@ Elle peut être utilisée lors de formations, de jeux de rôle ou d’exercices 
   - Horaire de diffusion.
   - **Réaction attendue** (🔎) et **Commentaire** (📝) associés.
 - Vue permettant de suivre en parallèle le déroulement et d’évaluer les réactions.
+
+### 👁️ Observateur
+- Accès réservé par mot de passe.
+- Timeline affichant uniquement les **messages** (pas les tweets).
+- Pour chaque message, l'observateur peut noter la réaction de la cellule de crise par un pouce vers le haut 👍 ou le bas 👎 et ajouter un commentaire 
+- Les informations saisie sont stockées en local dans le navigateur dans l'observateur 
+- Export en JSON ou CSV 
 
 ---
 
@@ -103,7 +110,8 @@ pip install -r requirements.txt
 Créer un fichier `.env` avec les variables nécessaires :
 ```env
 ADMIN_PASSWORD=MonMotDePasseAdmin
-OBSERVER_PASSWORD=MonMotDePasseAnimateur
+ANIMATOR_PASSWORD=MonMotDePasseAnimateur
+OBSERVER_PASSWORD=MonMotDePasseObservateur
 APP_ID=SIM-REMPAR25
 FLASK_SECRET=ma-cle-ultra-secrete
 ```
@@ -133,6 +141,7 @@ Une instance de démonstration est disponible à l’adresse suivante :
 En mode démo :
 
 - L’accès à l’**Animateur** ne nécessite pas de mot de passe.
+- L’accès à l’**Observateur** ne nécessite pas de mot de passe.
 - L'accès à l'**administrateur** n'est pas accessible 
 - Les autres fonctionnalités (Messagerie, Réseaux sociaux) restent accessibles pour tester le scénario.
 - Ce mode est uniquement prévu pour découvrir l’outil.
@@ -144,6 +153,8 @@ En mode démo :
 - [ ] Ajout d’un **mode clair/sombre** (préférence sauvegardée dans le navigateur)
 - [ ] Support **multilingue** (chargement des textes depuis un fichier de traduction)
 - [ ] Possibilité de publier ses propres tweet (limité à la fonction comm)
+- [✅] ~~Ajouter une page pour les observateurs~~
+- [ ] Générer un PDF à partir des remarques de l'**observateur**
 
 ---
 

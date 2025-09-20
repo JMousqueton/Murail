@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="fr" data-bs-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Observateur – Notation & Commentaires</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome (for thumbs & icons) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+
+    <style>
+      :root { --cc-border: rgba(255,255,255,.12); --cc-muted:#9aa0a6; }
+      body { background:#0b0f14; color:#fff; }
+
+      .small-muted { color:var(--cc-muted); }
+      .card-obs { border:1px solid var(--cc-border); border-radius:.75rem; padding:1rem; }
+      .box { border:1px solid var(--cc-border); border-radius:.5rem; padding:.75rem; background:rgba(255,255,255,.03); }
+      .vote-btn { border:1px solid var(--cc-border); background:transparent; color:#ddd; }
+      .vote-btn.active.up { background:rgba(25,135,84,.15); border-color:rgba(25,135,84,.45); color:#9bd2b7; }
+      .vote-btn.active.down { background:rgba(220,53,69,.15); border-color:rgba(220,53,69,.45); color:#f0a7ae; }
+      .time-pill { font-size:.85rem; }
+
+      /* Prochain message : grisé + inactif */
+      .card-obs.upcoming.inactive{
+        opacity:.6;
+        background:#2b2b2b;
+        border:1px dashed #666;
+      }
+      .card-obs.upcoming.inactive *{
+        pointer-events:none;
+        cursor:not-allowed;
+      }
+      .card-obs.upcoming.inactive .badge.time-pill{
+        background:#0d6efd !important; /* bleu bootstrap */
+        color:#fff !important;
+      }
+
+      /* Flash lorsque le “prochain” devient actif */
+      .flash-activated{
+        animation: flashBorder 1200ms ease-out;
+      }
+      @keyframes flashBorder{
+        0%   { box-shadow: 0 0 0 .15rem rgba(255,193,7,.7); }
+        100% { box-shadow: 0 0 0 .15rem rgba(255,193,7,0); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container py-3">
+      <!-- Header -->
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-info text-dark">Observateur</span>
+          <span class="small-muted">Prenez des notes localement, en temps réel.</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button id="exportJson" class="btn btn-sm btn-outline-light"><i class="fa-solid fa-file-export me-1"></i>Export JSON</button>
+          <button id="exportCsv" class="btn btn-sm btn-outline-light"><i class="fa-solid fa-table me-1"></i>Export CSV</button>
+          <button id="clearAll" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash-can me-1"></i>Effacer notes</button>
+          <span class="small-muted" id="rtclock"></span>
+        </div>
+      </div>
+
+      <div id="list" class="d-flex flex-column gap-3"></div>
+    </div>
+
+    <script>
+      // ---------- Initial data from server ----------
+      const INITIAL_PAST3 = {{ past3 | tojson }};
+      const INITIAL_NEXT1 = {{ next1 | tojson }};
+      const INITIAL_NEXT2 = {{ next2 | tojson }};
+      const APP_ID = {{ APP_ID | tojson }};
+
+      // ---------- Clock ----------
+      function updateClock(){
+        const el = document.getElementById('rtclock');
+        if (!el) return;
+        el.textContent = new Date().toLocaleString('fr-FR', { timeZone:'Europe/Paris' });
+      }
+      setInterval(updateClock, 1000); updateClock();
+
+      // ---------- Helpers ----------
+      const LS_KEY = (id)=> `obsnotes::${APP_ID}::${id}`;
+      function hhmm(ms){
+        const d = new Date(ms);
+        return d.toLocaleTimeString('fr-FR',{ timeZone:'Europe/Paris', hour:'2-digit', minute:'2-digit' });
+      }
+      function download(filename, text, type='text/plain'){
+        const blob = new Blob([text], {type});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename; a.click();
+        setTimeout(()=> URL.revokeObjectURL(url), 2000);
+      }
+      function escapeHtml(s){
+        return String(s ?? '')
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+
+      // ---------- Normalisation (server + SSE) ----------
+      function normalizeEvent(e){
+        if (!e) return null;
+        const id = e.msg_id || e.id;
+
+        // timestamp
+        let ms = Number.isFinite(e.at_ms) ? e.at_ms : NaN;
+        if (!Number.isFinite(ms) && e.at){
+          const d = new Date(e.at);
+          if (!isNaN(d)) ms = d.getTime();
+        }
+
+        // emetteur / destinataire
+        let emetteur = e.emetteur || "";
+        let destinataire = e.destinataire || "";
+        if (!emetteur || !destinataire){
+          const m = /Message\s+à\s+(.+?)\s+\(de\s+(.+?)\)/i.exec(e.label || "");
+          if (m){ destinataire = destinataire || m[1]; emetteur = emetteur || m[2]; }
+        }
+
+        return {
+          id,
+          at_ms: ms,
+          emetteur,
+          destinataire,
+          stimuli: e.stimuli || "",
+          label: e.label || ""
+        };
+      }
+
+      // ---------- Notes store (localStorage) ----------
+      function loadNote(id){
+        try { return JSON.parse(localStorage.getItem(LS_KEY(id)) || '{}'); }
+        catch { return {}; }
+      }
+      function saveNote(id, note){
+        try {
+          localStorage.setItem(LS_KEY(id), JSON.stringify({
+            ...note,
+            saved_at: Date.now(),
+          }));
+        } catch {}
+      }
+
+      // ---------- Render one card ----------
+      function makeCard(e, { inactive = false } = {}){
+        const note = loadNote(e.id);
+        const vote = note.vote || null; // 'up' | 'down' | null
+        const comment = note.comment || '';
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'card-obs';
+        wrapper.dataset.mid = e.id;
+
+        wrapper.innerHTML = `
+          <div class="d-flex justify-content-between align-items-baseline mb-1">
+            <div>
+              <span class="badge bg-warning text-dark">Stimulus #${escapeHtml(e.id)}</span>
+              <strong class="ms-2">${escapeHtml(e.emetteur||'')} → ${escapeHtml(e.destinataire||'')}</strong>
+            </div>
+            <span class="badge text-bg-primary time-pill">${hhmm(e.at_ms)}</span>
+          </div>
+          <div>
+            <label class="form-label small small-muted"><i class="fa-solid fa-inbox"></i> Message :</label>
+          </div>
+          <div class="box mb-3" style="white-space:pre-wrap">${escapeHtml(e.stimuli || '')}</div>
+
+          <div class="row g-3 align-items-start">
+            <div class="col-12 col-md-4">
+              <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm vote-btn ${vote==='up'?'active up':''}" data-vote="up" title="👍 Conforme / bon"><i class="fa-solid fa-thumbs-up"></i></button>
+                <button class="btn btn-sm vote-btn ${vote==='down'?'active down':''}" data-vote="down" title="👎 À améliorer / non conforme"><i class="fa-solid fa-thumbs-down"></i></button>
+                <span class="small-muted" id="saveStatus"></span>
+              </div>
+            </div>
+            <div class="col-12 col-md-8">
+              <label class="form-label small small-muted">Commentaire</label>
+              <textarea class="form-control form-control-sm" rows="3" placeholder="Votre observation…">${escapeHtml(comment)}</textarea>
+            </div>
+          </div>
+        `;
+
+        const upBtn   = wrapper.querySelector('[data-vote="up"]');
+        const downBtn = wrapper.querySelector('[data-vote="down"]');
+        const ta      = wrapper.querySelector('textarea');
+        const status  = wrapper.querySelector('#saveStatus');
+
+        function setVote(v){
+          const cur = loadNote(e.id);
+          const nextVote = (cur.vote === v) ? null : v; // toggle
+          const updated = { ...cur, vote: nextVote };
+          saveNote(e.id, updated);
+          upBtn.classList.toggle('active', nextVote === 'up');
+          upBtn.classList.toggle('up',     nextVote === 'up');
+          downBtn.classList.toggle('active', nextVote === 'down');
+          downBtn.classList.toggle('down',   nextVote === 'down');
+          flashSaved();
+        }
+        function setComment(txt){
+          const cur = loadNote(e.id);
+          saveNote(e.id, { ...cur, comment: txt });
+          flashSaved();
+        }
+        function flashSaved(){
+          status.textContent = 'Enregistré';
+          setTimeout(()=> status.textContent='', 1200);
+        }
+
+        if (!inactive) {
+          upBtn.addEventListener('click', ()=> setVote('up'));
+          downBtn.addEventListener('click', ()=> setVote('down'));
+          ta.addEventListener('input', (ev)=> setComment(ev.target.value));
+        } else {
+          wrapper.classList.add('upcoming','inactive');
+          [upBtn, downBtn, ta].forEach(n => {
+            n.disabled = true;
+            n.setAttribute('aria-disabled','true');
+            n.title = `Disponible à ${hhmm(e.at_ms)}`;
+          });
+          const hint = document.createElement('div');
+          hint.className = 'small-muted mt-2';
+          hint.textContent = `Ce stimulus sera activé à ${hhmm(e.at_ms)}.`;
+          wrapper.appendChild(hint);
+        }
+
+        return wrapper;
+      }
+
+      // ---------- List rendering ----------
+      const list = document.getElementById('list');
+      const items = []; // known events (normalized)
+      function upsert(ev){
+        if (!ev || !ev.id) return;
+        const i = items.findIndex(x => x.id === ev.id);
+        if (i >= 0) items[i] = { ...items[i], ...ev };
+        else items.push(ev);
+      }
+
+      // track last “next” id to detect activation
+      let prevNextId = null;
+
+      function renderAll(){
+        // sort by time
+        const valid = items.filter(e => Number.isFinite(e.at_ms));
+        valid.sort((a,b)=> a.at_ms - b.at_ms);
+
+        const now = Date.now();
+        const past   = valid.filter(e => e.at_ms <= now);
+        const future = valid.filter(e => e.at_ms >  now);
+
+        const next = future[0] || null;
+
+        // build DOM
+        list.innerHTML = '';
+
+        // NEXT (always on top, grey/inactive)
+        if (next){
+          const card = makeCard(next, { inactive:true });
+          card.classList.add('upcoming','inactive');
+          list.appendChild(card);
+        }
+
+        // PAST (newest first, active)
+        for (const e of [...past].reverse()){
+          list.appendChild(makeCard(e));
+        }
+
+        // ---------- Flash when next becomes active ----------
+        // If we had a prevNextId and it is now in "past", flash the corresponding card.
+        if (prevNextId && (!next || next.id !== prevNextId)) {
+          const activated = list.querySelector(`[data-mid="${CSS.escape(prevNextId)}"]`);
+          if (activated){
+            activated.classList.add('flash-activated');
+            setTimeout(()=> activated.classList.remove('flash-activated'), 1300);
+          }
+        }
+
+        // update tracker
+        prevNextId = next ? next.id : null;
+      }
+
+      // Seed with server data (normalize!)
+      for (const e of (INITIAL_PAST3 || [])){
+        const n = normalizeEvent(e); if (n) upsert(n);
+      }
+      if (INITIAL_NEXT1){ const n = normalizeEvent(INITIAL_NEXT1); if (n) upsert(n); }
+      if (INITIAL_NEXT2){ const n = normalizeEvent(INITIAL_NEXT2); if (n) upsert(n); }
+      renderAll();
+
+      // ---------- SSE (reuse stream_animateur) ----------
+      const evt = new EventSource("{{ url_for('stream_animateur') }}");
+      evt.addEventListener('animateur', (e) => {
+        try{
+          const payload = JSON.parse(e.data);
+          if (Array.isArray(payload)) {
+            for (const m of payload) {
+              const n = normalizeEvent(m);
+              if (n) upsert(n);
+            }
+            renderAll();
+          }
+        } catch {}
+      });
+      evt.addEventListener('ping', ()=>{});
+      evt.onerror = ()=>{}; // auto-reconnect
+
+      // ---------- Export / Clear ----------
+      function collectAllNotes(){
+        return items
+          .filter(e => Number.isFinite(e.at_ms))
+          .map(e => {
+            const n = loadNote(e.id);
+            return {
+              id: e.id,
+              at_iso: new Date(e.at_ms).toISOString(),
+              emetteur: e.emetteur || '',
+              destinataire: e.destinataire || '',
+              stimuli: e.stimuli || '',
+              vote: n.vote || '',
+              comment: n.comment || '',
+              saved_at: n.saved_at ? new Date(n.saved_at).toISOString() : '',
+            };
+          });
+      }
+
+      document.getElementById('exportJson').addEventListener('click', ()=>{
+        const data = collectAllNotes();
+        download('observations.json', JSON.stringify(data, null, 2), 'application/json');
+      });
+
+      document.getElementById('exportCsv').addEventListener('click', ()=>{
+        const data = collectAllNotes();
+        const headers = ['id','at_iso','emetteur','destinataire','stimuli','vote','comment','saved_at'];
+        const rows = [headers.join(',')].concat(
+          data.map(o => headers.map(h => `"${String(o[h] ?? '').replace(/"/g,'""')}"`).join(','))
+        );
+        download('observations.csv', rows.join('\n'), 'text/csv');
+      });
+
+      document.getElementById('clearAll').addEventListener('click', ()=>{
+        if (!confirm('Effacer toutes les notes locales ?')) return;
+        for (const e of items) localStorage.removeItem(LS_KEY(e.id));
+        alert('Notes supprimées localement.');
+        renderAll();
+      });
+    </script>
+
+    <footer class="text-center mt-5 p-3 bg-dark text-light">
+      <p>© 2025 <a href="https://github.com/JMousqueton/REMPAR" target="_blank">Julien Mousqueton</a></p>
+      <p>basé sur l'exercice REMPAR25 de l'ANSSI</p>
+    </footer>
+    {{ TRACKING | safe }}
+  </body>
+</html>

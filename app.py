@@ -33,6 +33,7 @@ ROLES = [
 DATA_PATH = os.environ.get("SCENARIO_XLSX", os.path.join("Sample", "chronogramme.xlsx"))
 ADMIN_PASSWORD     = os.environ.get("ADMIN_PASSWORD", "changeme_admin")
 ANIMATOR_PASSWORD  = os.environ.get("ANIMATOR_PASSWORD", "changeme_animator")
+OBSERVER_PASSWORD  = os.environ.get("OBSERVER_PASSWORD", "changeme_observer")
 APP_ID             = os.environ.get("APP_ID", "REMPAR-DEMO-LOCAL")
 TRACKING           = os.environ.get("TRACKING", "")
 
@@ -677,6 +678,80 @@ def stream_messages():
                 yield f"event: message\ndata: {payload}\n\n"
             time.sleep(1)
     return app.response_class(gen(), mimetype='text/event-stream')
+
+
+@app.route("/observateur", methods=["GET", "POST"])
+def observateur():
+    # Gate with password unless already authenticated in this session
+    if not session.get("is_observer"):
+        if request.method == "POST":
+            pwd = request.form.get("password", "")
+            if pwd == OBSERVER_PASSWORD:
+                session["is_observer"] = True
+                return redirect(url_for("observateur"))
+            else:
+                flash("Mot de passe incorrect")
+                return redirect(url_for("observateur"))
+        # GET: show login, prefill password in demo mode
+        return render_template(
+            "admin_login.html",
+            action=url_for("observateur"),
+            prefill_password=(OBSERVER_PASSWORD if DEMO else "")
+        )
+
+    # ---- authenticated: render your observateur page (notes) ----
+    # Build the same context you already use (past3/next1/next2/APP_ID, etc.)
+    # Example skeleton:
+    now = datetime.now(tz=APP_TZ)
+    with STATE_LOCK:
+        future_msgs = sorted([m for m in MESSAGES if m["at"] >= now], key=lambda m: m["at"])
+        past_msgs   = sorted([m for m in MESSAGES if m["at"] <  now], key=lambda m: m["at"])
+
+    past3 = [
+        {
+            "id": m["id"],
+            "at": m["at"].isoformat(),
+            "at_ms": int(m["at"].timestamp() * 1000),
+            "emetteur": m.get("emetteur",""),
+            "destinataire": m.get("destinataire",""),
+            "stimuli": m.get("stimuli",""),
+            "label": f"Message à {m.get('destinataire','')} (de {m.get('emetteur','')})",
+        }
+        for m in past_msgs[-3:]
+    ]
+    next1 = None
+    next2 = None
+    if future_msgs:
+        m0 = future_msgs[0]
+        next1 = {
+            "id": m0["id"],
+            "at": m0["at"].isoformat(),
+            "at_ms": int(m0["at"].timestamp() * 1000),
+            "emetteur": m0.get("emetteur",""),
+            "destinataire": m0.get("destinataire",""),
+            "stimuli": m0.get("stimuli",""),
+            "label": f"Message à {m0.get('destinataire','')} (de {m0.get('emetteur','')})",
+        }
+        if len(future_msgs) > 1:
+            m1 = future_msgs[1]
+            next2 = {
+                "id": m1["id"],
+                "at": m1["at"].isoformat(),
+                "at_ms": int(m1["at"].timestamp() * 1000),
+                "emetteur": m1.get("emetteur",""),
+                "destinataire": m1.get("destinataire",""),
+                "stimuli": m1.get("stimuli",""),
+                "label": f"Message à {m1.get('destinataire','')} (de {m1.get('emetteur','')})",
+            }
+
+    return render_template(
+        "observateur.html",
+        past3=past3,
+        next1=next1,
+        next2=next2,
+        APP_ID=APP_ID,
+    )
+
 
 @app.route("/messagerie/change", methods=["POST", "GET"])
 def messagerie_change():

@@ -149,7 +149,7 @@ L’application REMPAR propose plusieurs interfaces web permettant aux participa
 
 ---
 
-### 🔎 Observateur (`/animateur`)
+### 🔎 Animateur (`/animateur`)
 
 - Réservé aux **animateurs / contrôleurs**.
 - Accès via mot de passe (ou prérempli en mode démo).
@@ -159,7 +159,25 @@ L’application REMPAR propose plusieurs interfaces web permettant aux participa
   - Les **2 prochains messages** programmés.
   - Affichage des **réactions attendues** et **commentaires** définis dans le fichier Excel.
 
-![Observateur](img/animateur.png)
+![Animateur](img/animateur.png)
+
+---
+
+### 👁️ Observateur (`/observateur`)
+
+- Réservé aux **observateurs / évaluateurs**.  
+- Accès via mot de passe.  
+- Fonctionnalités :  
+  - Vue centrée sur les **stimuli (messages)** de l’exercice.  
+  - Le **prochain message** est affiché en haut, grisé et inactif jusqu’à son horaire.  
+  - Les **messages passés** apparaissent en ordre inverse chronologique (le plus récent en premier).  
+  - Pour chaque stimulus, l’observateur peut :  
+    - Donner une **appréciation rapide** (👍 / 👎).  
+    - Ajouter un **commentaire libre**.  
+  - Les notes sont **sauvegardées automatiquement** en local (navigateur).  
+  - Possibilité d’**exporter** les observations en **JSON** ou **CSV** pour analyse et debriefing.  
+
+![Observateur](img/observateur.png)
 
 ---
 
@@ -171,6 +189,8 @@ L’application REMPAR propose plusieurs interfaces web permettant aux participa
   - Voir les événements passés et futurs.
   - **Téléverser des images** (qui pourront être utilisées dans les tweets via `[img nom.png]`).
   - Indicateur si un scénario est chargé ou non.
+
+  ![Admin](img/admin.png)
 
 ---
 
