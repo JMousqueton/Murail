@@ -38,6 +38,18 @@
         z-index: 9;  /* header est z-index:10 */
       }
 
+      /* Filtre actif (pill) */
+      .filter-chip {
+        display:none; gap:.5rem; align-items:center; justify-content:center;
+        border:1px solid rgba(13,110,253,.35); background:rgba(13,110,253,.10);
+        color:#fff; border-radius:999px; padding:.35rem .75rem; max-width:720px; margin:.5rem auto 1rem;
+        font-size:.9rem;
+      }
+      .filter-chip .btn-clear {
+        border:none; background:transparent; color:#9aa0a6; cursor:pointer; font-weight:700;
+      }
+      .filter-chip .btn-clear:hover { color:#fff; }
+
       .col-center { max-width: 750px; border-left: 1px solid var(--cc-border); border-right: 1px solid var(--cc-border); }
       .right-rail { position: sticky; top: 64px; }
       .right-card { background: rgba(255,255,255,.03); border: 1px solid var(--cc-border); border-radius: 1rem; }
@@ -46,9 +58,9 @@
       .tweet-card:first-child { border-top: 1px solid var(--cc-border); }
       .avatar { width: 48px; height: 48px; border-radius: 50%; position: relative; overflow: hidden; flex: 0 0 48px; }
       .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%; }
-      .avatar-fallback { 
-        position: absolute; inset: 0; display: none; 
-        align-items: center; justify-content: center; font-weight: 700; 
+      .avatar-fallback {
+        position: absolute; inset: 0; display: none;
+        align-items: center; justify-content: center; font-weight: 700;
         border-radius: 50%;
       }
 
@@ -93,6 +105,14 @@
       </div>
     </div>
 
+    <!-- Filtre actif (affiché quand un hashtag est sélectionné) -->
+    <div class="container-fluid">
+      <div id="filterPill" class="filter-chip" role="status" aria-live="polite">
+        <span id="filterPillText"></span>
+        <button class="btn-clear" id="filterPillClear" aria-label="Retirer le filtre">×</button>
+      </div>
+    </div>
+
     <div class="container-fluid">
       <div class="row justify-content-center g-0">
         <div class="col-12 col-lg-7 col-center">
@@ -116,8 +136,49 @@
       </div>
     </div>
 
-    <!-- ——— PSEUDOS ALÉATOIRES (chargement + file d’attente) ——— -->
+    <!-- ——— JS ——— -->
     <script>
+      // ====== ÉLÉMENTS GLOBAUX ======
+      const feed = document.getElementById('feed');
+      const idle = document.getElementById('idle');
+      const trendsList = document.getElementById('trends');
+      const trendCount = document.getElementById('trend-count');
+      const filterPill = document.getElementById('filterPill');
+      const pillText = document.getElementById('filterPillText');
+      const pillClearBtn = document.getElementById('filterPillClear');
+
+      // ====== OUTILS GÉNÉRAUX ======
+      function escapeHtml(s){return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
+      function makeHandle(name){
+        const handle=(name||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-z0-9]/g,'').slice(0,15);
+        return '@'+(handle||'user');
+      }
+      function avatarBg(text){
+        let hash=0; for(let i=0;i<(text||'').length;i++){hash=(hash<<5)-hash+text.charCodeAt(i);hash|=0}
+        const hue=Math.abs(hash)%360;return`hsl(${hue} 70% 45%)`;
+      }
+      function initialsOf(name){return((name||'').match(/\b\p{L}/gu)||['?']).slice(0,2).join('').toUpperCase();}
+      function safeSlugLower(name){
+        return (name||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'')
+          .replace(/\s+/g,'_').replace(/[^a-z0-9._-]/g,'').slice(0,64)||'user';
+      }
+
+      // ====== HORLOGE + HEADER ======
+      function updateClock(){
+        const d = new Date();
+        document.getElementById('clock').textContent = d.toLocaleString('fr-FR',{timeZone:'{{ TZ }}'});
+      }
+      setInterval(updateClock,1000); updateClock();
+
+      function setBannerTop(){
+        const header = document.querySelector('.tw-header');
+        const h = header ? header.offsetHeight : 56;
+        document.documentElement.style.setProperty('--header-h', h + 'px');
+      }
+      window.addEventListener('load', setBannerTop);
+      window.addEventListener('resize', setBannerTop);
+
+      // ====== NOMS ALÉATOIRES ======
       let tweeterNames = [];
       let namesLoaded = false;
 
@@ -131,7 +192,6 @@
             const txt = await resp.text();
             tweeterNames = txt.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
           }catch(e){
-            // Fallback minimal si le fichier n'est pas dispo
             tweeterNames = ['infirmiere75','Parentdu92','citoyen_paris','UrgencesIDF','JournalLocal'];
           }finally{
             namesLoaded = true;
@@ -154,95 +214,115 @@
         if (s === 'aléatoire') return true;
         return s.normalize('NFD').replace(/\p{Diacritic}/gu,'') === 'aleatoire';
       }
-    </script>
 
-    <!-- ——— APP ——— -->
-    <script>
-      const feed = document.getElementById('feed');
-      const idle = document.getElementById('idle');
-      const trendsList = document.getElementById('trends');
-      const trendCount = document.getElementById('trend-count');
+      // ====== HASHTAGS / TENDANCES + HISTORIQUE ======
+      const hashtagMap = new Map();
+      let activeTag = null;
 
-      function updateClock(){
-        const d = new Date();
-        document.getElementById('clock').textContent = d.toLocaleString('fr-FR',{timeZone:'{{ TZ }}'});
-      }
-      setInterval(updateClock,1000); updateClock();
-
-      function setBannerTop(){
-        const header = document.querySelector('.tw-header');
-        const h = header ? header.offsetHeight : 56;
-        document.documentElement.style.setProperty('--header-h', h + 'px');
-      }
-      window.addEventListener('load', setBannerTop);
-      window.addEventListener('resize', setBannerTop);
-
-      function makeHandle(name){
-        const handle=(name||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-z0-9]/g,'').slice(0,15);
-        return '@'+(handle||'user');
-      }
-      function avatarBg(text){
-        let hash=0; for(let i=0;i<(text||'').length;i++){hash=(hash<<5)-hash+text.charCodeAt(i);hash|=0}
-        const hue=Math.abs(hash)%360;return`hsl(${hue} 70% 45%)`;
-      }
-      function escapeHtml(s){return(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
-      function initialsOf(name){return((name||'').match(/\b\p{L}/gu)||['?']).slice(0,2).join('').toUpperCase();}
-      function safeSlugLower(name){
-        return (name||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'')
-          .replace(/\s+/g,'_').replace(/[^a-z0-9._-]/g,'').slice(0,64)||'user';
-      }
-
-      // Tendances
-      const hashtagMap=new Map(); let activeTag=null;
       function extractHashtags(text){
-        if(!text)return[];const re=/(^|[\s.,;:!?()\[\]{}"'])#([\p{L}\p{N}_]{1,50})/giu;const out=[];let m;
-        while((m=re.exec(text))!==null){out.push(m[2].toLowerCase());}return out;
+        if(!text) return [];
+        const re = /(^|[\s.,;:!?()\[\]{}"'])#([\p{L}\p{N}_]{1,50})/giu;
+        const out = []; let m;
+        while((m = re.exec(text)) !== null){ out.push(m[2].toLowerCase()); }
+        return out;
       }
-      function updateTrendsUI(){
-        const arr=Array.from(hashtagMap.entries()).sort((a,b)=>b[1]-a[1]).slice(0,10);
-        trendsList.innerHTML='';
-        for(const[tag,count]of arr){
-          const div=document.createElement('div');div.className='trend'+(activeTag===tag?' active':'');
-          div.innerHTML=`<span class="tag">#${escapeHtml(tag)}</span><span class="count">${count}</span>`;
-          div.addEventListener('click',()=>{activeTag=(activeTag===tag)?null:tag;filterFeedByHashtag(activeTag);updateTrendsUI();window.scrollTo({top:0,behavior:'smooth'});});
-          trendsList.appendChild(div);
-        }
-        trendCount.textContent=arr.length?`${arr.length} sujets`:'Aucun sujet';
-      }
+
       function registerHashtagsFromTweet(t){
-        const tags=extractHashtags(t.texte);
-        for(const tag of tags){hashtagMap.set(tag,(hashtagMap.get(tag)||0)+1);}
+        const tags = extractHashtags(t.texte);
+        for(const tag of tags){ hashtagMap.set(tag, (hashtagMap.get(tag)||0) + 1); }
         updateTrendsUI();
       }
+
+      function updateTrendsUI(){
+        const arr = Array.from(hashtagMap.entries())
+          .sort((a,b)=>b[1]-a[1])
+          .slice(0,10);
+
+        trendsList.innerHTML = '';
+        for(const [tag,count] of arr){
+          const div = document.createElement('div');
+          div.className = 'trend' + (activeTag===tag ? ' active' : '');
+          div.innerHTML = `<span class="tag">#${escapeHtml(tag)}</span><span class="count">${count}</span>`;
+          div.addEventListener('click', () => {
+            if(activeTag === tag){ applyTag(null, true); }
+            else { applyTag(tag, true); }
+          });
+          trendsList.appendChild(div);
+        }
+        trendCount.textContent = arr.length ? `${arr.length} sujets` : 'Aucun sujet';
+      }
+
       function filterFeedByHashtag(tag){
-        const cards=feed.querySelectorAll('.tweet-card');
-        if(!tag){cards.forEach(c=>c.style.display='');return;}
-        const normalized=`#${tag}`;
+        const cards = feed.querySelectorAll('.tweet-card');
+        if(!tag){
+          cards.forEach(c => c.style.display = '');
+          return;
+        }
+        const normalized = `#${tag}`;
         cards.forEach(c=>{
-          const text=c.querySelector('.tweet-text')?.textContent?.toLowerCase()||'';
-          c.style.display=text.includes(normalized)?'':'none';
+          const text = c.querySelector('.tweet-text')?.textContent?.toLowerCase() || '';
+          c.style.display = text.includes(normalized) ? '' : 'none';
         });
       }
 
+      function getTagFromHash(){
+        const h = (location.hash || '').replace(/^#/, '');
+        const m = h.match(/^tag=(.+)$/);
+        return m ? decodeURIComponent(m[1]) : null;
+      }
+
+      function pushHash(tag){
+        const url = new URL(window.location);
+        if(tag){
+          url.hash = `tag=${encodeURIComponent(tag)}`;
+        } else {
+          url.hash = '';
+        }
+        history.pushState({ tag: tag || null }, '', url);
+      }
+
+      function updateFilterPill(){
+        if(activeTag){
+          pillText.textContent = `Filtre actif : #${activeTag}`;
+          filterPill.style.display = 'flex';
+        } else {
+          filterPill.style.display = 'none';
+          pillText.textContent = '';
+        }
+      }
+
+      function applyTag(tag, push){
+        activeTag = tag || null;
+        filterFeedByHashtag(activeTag);
+        updateTrendsUI();
+        updateFilterPill();
+        if(push) pushHash(activeTag);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      pillClearBtn?.addEventListener('click', () => applyTag(null, true));
+      window.addEventListener('popstate', () => { applyTag(getTagFromHash(), false); });
+      window.addEventListener('load', () => { applyTag(getTagFromHash(), false); });
+
+      // ====== CONTENU / TWEETS ======
       function replaceImgShortcode(text){
-        if(!text)return'';return text.replace(/\[img\s+([^\]\s]+\.(?:png|jpg|jpeg|gif))\]/gi,(m,fname)=>{
-          const safe=fname.replace(/[^a-zA-Z0-9._-]/g,'');return `<img src="/static/images/${safe}" alt="">`;
+        if(!text)return'';
+        return text.replace(/\[img\s+([^\]\s]+\.(?:png|jpg|jpeg|gif))\]/gi,(m,fname)=>{
+          const safe=fname.replace(/[^a-zA-Z0-9._-]/g,'');
+          return `<img src="/static/images/${safe}" alt="">`;
         });
       }
 
-      // Compteurs dynamiques
       const timers=new Map();
       function hashStr(s){let h=2166136261>>>0;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
       const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
       const jitterMs=(min,max)=>Math.floor(min+Math.random()*(max-min));
 
-      // FILE D’ATTENTE POUR ATTENDRE LES NOMS
       const tweetQueue = [];
       function enqueueTweet(t){ tweetQueue.push(t); if(namesLoaded) flushQueue(); }
       function flushQueue(){ while(tweetQueue.length){ addTweetNow(tweetQueue.shift()); } }
 
       function tweetCard(t){
-        // Nom affiché : si t.emetteur == "aléatoire" (avec ou sans accent), on pioche dans le fichier
         const displayName = isAleatoire(t.emetteur) ? pickRandomName() : (t.emetteur || 'Utilisateur');
 
         const initials=initialsOf(displayName);
@@ -289,7 +369,6 @@
           }
         });
 
-        // Seed/animation selon le nom affiché
         seedAndAnimate(card,t,displayName);
         registerHashtagsFromTweet(t);
         return card;
@@ -321,7 +400,7 @@
       const observer=new MutationObserver(()=>{const live=new Set([...feed.querySelectorAll('.tweet-card')].map(c=>c.dataset.tid));for(const tid of [...timers.keys()])if(!live.has(tid))stopTimer(tid);});
       observer.observe(feed,{childList:true});
 
-      // SSE : on met en file si les noms ne sont pas encore chargés
+      // ====== SSE ======
       const evt=new EventSource("{{ url_for('stream_tweets') }}");
       evt.addEventListener('tweet',(e)=>{try{const payload=JSON.parse(e.data);for(const t of payload) enqueueTweet(t);}catch{}});
       evt.onmessage=(e)=>{try{const payload=JSON.parse(e.data);if(Array.isArray(payload))for(const t of payload) enqueueTweet(t);}catch{}};
