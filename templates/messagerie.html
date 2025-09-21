@@ -26,19 +26,18 @@
       .mail-body{ height: calc(100vh - 180px); overflow:auto; }
       .header-bar{ position:sticky; top:0; z-index:5; backdrop-filter: blur(6px); background: rgba(0,0,0,.4); border-bottom:1px solid var(--cc-border); }
       .badge-processed{ background: rgba(25,135,84,.18); border: 1px solid rgba(25,135,84,.45); color:#9bd2b7; }
-      /* Apparition en fondu + léger slide */
-@keyframes slideInUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.appear {
-  animation: slideInUp 420ms ease-out both;
-}
 
-/* Respecte la réduction d’animations utilisateur */
-@media (prefers-reduced-motion: reduce) {
-  .appear { animation: none; }
-}
+      /* Apparition en fondu + léger slide */
+      @keyframes slideInUp {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .appear { animation: slideInUp 420ms ease-out both; }
+
+      /* Respecte la réduction d’animations utilisateur */
+      @media (prefers-reduced-motion: reduce) {
+        .appear { animation: none; }
+      }
     </style>
   </head>
   <body>
@@ -47,17 +46,22 @@
       <div class="header-bar d-flex align-items-center justify-content-between px-2 px-md-3 py-2 mb-3">
         <h1 class="h4 m-0"><a href="/"><i class="fa-solid fa-house text-white"></i></a> Messagerie</h1>
 
-        {% if selected_role %}
-          <div class="d-flex align-items-center gap-2">
-            <!-- 🔔 Toggle son -->
-            <button id="soundToggle" type="button" class="btn btn-sm btn-outline-light" title="Activer/Désactiver le son">🔔 Son: <span id="soundState">ON</span></button>
-            <form action="{{ url_for('messagerie_change') }}" method="post" class="m-0">
-              <button class="btn btn-sm btn-outline-light">Changement de profil</button>
-            </form>
-          </div>
-        {% else %}
-          <div class="small-muted">Choisissez un profil pour commencer</div>
-        {% endif %}
+        <!-- Right zone with live clock + controls -->
+        <div class="d-flex align-items-center gap-3">
+          <div class="small-muted" id="clock"></div>
+
+          {% if selected_role %}
+            <div class="d-flex align-items-center gap-2">
+              <!-- 🔔 Toggle son -->
+              <button id="soundToggle" type="button" class="btn btn-sm btn-outline-light" title="Activer/Désactiver le son">🔔 Son: <span id="soundState">ON</span></button>
+              <form action="{{ url_for('messagerie_change') }}" method="post" class="m-0">
+                <button class="btn btn-sm btn-outline-light">Changement de profil</button>
+              </form>
+            </div>
+          {% else %}
+            <div class="small-muted">Choisissez un profil pour commencer</div>
+          {% endif %}
+        </div>
       </div>
 
       {% with messages = get_flashed_messages() %}
@@ -120,7 +124,20 @@
     </audio>
 
     <script>
+/* ====== Horloge dynamique (comme SocialMedia) ====== */
+function updateClock(){
+  const d = new Date();
+  // Utilise la TZ fournie par le backend (ex: Europe/Paris)
+  const el = document.getElementById('clock');
+  if (el) el.textContent = d.toLocaleString('fr-FR', { timeZone: '{{ TZ }}' });
+}
+setInterval(updateClock, 1000);
+updateClock();
+    </script>
+
+<script>
 // --- Helpers d’icône de rôle (Font Awesome) ---
+function escapeHtml(s){ return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
 function normNoAccent(s){
   return String(s || '')
     .normalize('NFD')
@@ -147,7 +164,6 @@ function roleWithIconHTML(role){
 }
 </script>
 
-
     {% if selected_role %}
     <script>
       const mailList = document.getElementById('mail-list');
@@ -156,8 +172,6 @@ function roleWithIconHTML(role){
       const CURRENT_ROLE = '{{ selected_role }}';
 
       const seen = new Set(); // avoid duplicates between history and SSE
-
-      function escapeHtml(s){ return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
 
       // ----- local persistence (processed state) -----
       function storageKey(role){ return 'processed_msgs::' + (role || ''); }
@@ -179,7 +193,6 @@ function roleWithIconHTML(role){
       }
 
       function formatTime(ms){
-        //return new Date(ms).toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute:'2-digit' });
         return new Date(ms).toLocaleTimeString('fr-FR', { timeZone: '{{ TZ }}', hour: '2-digit', minute:'2-digit' });
       }
 
@@ -216,7 +229,6 @@ function roleWithIconHTML(role){
         if (!isSoundEnabled()) return;
         const audio = document.getElementById('notifSound');
         if (!audio) return;
-        // Débloquer l'autoplay si besoin (après une première interaction)
         audio.currentTime = 0;
         audio.play().catch(()=>{});
       }
@@ -227,7 +239,6 @@ function roleWithIconHTML(role){
         setSoundEnabled(isSoundEnabled()); // init label
         btn.addEventListener('click', ()=>{
           setSoundEnabled(!isSoundEnabled());
-          // petite lecture muette pour débloquer l’autoplay sur certains navigateurs
           const a = document.getElementById('notifSound');
           if (a) a.play().then(()=>{ a.pause(); a.currentTime = 0; }).catch(()=>{});
         });
@@ -258,12 +269,12 @@ function roleWithIconHTML(role){
             <span class="status-badge">${renderProcessedBadge(processed)}</span>
           </div>
         `;
-        li.classList.add('appear'); // animate the new list item  
+        li.classList.add('appear');
         li.addEventListener('click', ()=>showMessage(m));
         mailList.prepend(li);
         if (idle) idle.style.display = 'none';
         if (mailList.childElementCount === 1) showMessage(m);
-        return true; // a bien ajouté
+        return true;
       }
 
       function showMessage(m){
@@ -272,10 +283,9 @@ function roleWithIconHTML(role){
         mailView.dataset.openId = m.id;
 
         // relance proprement l’animation à chaque affichage de message
-mailView.classList.remove('appear');
-void mailView.offsetWidth;  // force reflow
-mailView.classList.add('appear');
-
+        mailView.classList.remove('appear');
+        void mailView.offsetWidth;
+        mailView.classList.add('appear');
 
         mailView.innerHTML = `
           <div class="d-flex justify-content-between align-items-baseline mb-2">
@@ -316,7 +326,7 @@ mailView.classList.add('appear');
           const res = await fetch(`/messages?role=${encodeURIComponent(CURRENT_ROLE)}&limit=100`, { cache: 'no-store' });
           const data = await res.json();
           if (Array.isArray(data) && data.length) {
-            for (const m of data) addMessageToList(m); // pas de son sur l'historique
+            for (const m of data) addMessageToList(m);
           }
           if (idle && mailList.childElementCount > 0) idle.style.display = 'none';
         } catch (e) {
@@ -337,14 +347,14 @@ mailView.classList.add('appear');
           if (Array.isArray(payload) && payload.length) {
             for (const m of payload) { if (addMessageToList(m)) added++; }
           }
-          if (added > 0) playNotification(); // "ding" uniquement si on a ajouté quelque chose
+          if (added > 0) playNotification();
         });
 
         // Countdown overlay (décompte)
         evt.addEventListener('decompte', (e) => {
           try {
             const { target_iso } = JSON.parse(e.data || "{}");
-            if (target_iso) window.location.replace("/"); // index affichera le décompte
+            if (target_iso) window.location.replace("/");
           } catch {}
         });
         evt.addEventListener('decompte_end', () => { /* no-op */ });

@@ -147,22 +147,6 @@
       const pillText = document.getElementById('filterPillText');
       const pillClearBtn = document.getElementById('filterPillClear');
 
-      // ====== OUTILS GÉNÉRAUX ======
-      function escapeHtml(s){return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
-      function makeHandle(name){
-        const handle=(name||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-z0-9]/g,'').slice(0,15);
-        return '@'+(handle||'user');
-      }
-      function avatarBg(text){
-        let hash=0; for(let i=0;i<(text||'').length;i++){hash=(hash<<5)-hash+text.charCodeAt(i);hash|=0}
-        const hue=Math.abs(hash)%360;return`hsl(${hue} 70% 45%)`;
-      }
-      function initialsOf(name){return((name||'').match(/\b\p{L}/gu)||['?']).slice(0,2).join('').toUpperCase();}
-      function safeSlugLower(name){
-        return (name||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'')
-          .replace(/\s+/g,'_').replace(/[^a-z0-9._-]/g,'').slice(0,64)||'user';
-      }
-
       // ====== HORLOGE + HEADER ======
       function updateClock(){
         const d = new Date();
@@ -178,41 +162,61 @@
       window.addEventListener('load', setBannerTop);
       window.addEventListener('resize', setBannerTop);
 
-      // ====== NOMS ALÉATOIRES ======
-      let tweeterNames = [];
-      let namesLoaded = false;
-
-      function loadTweeterNames(){
-        return (async ()=>{
-          try{
-            let resp = await fetch('/static/data/tweeter.txt', { cache: 'no-store' });
-            if(!resp.ok){
-              resp = await fetch('/data/tweeter.txt', { cache: 'no-store' });
-            }
-            const txt = await resp.text();
-            tweeterNames = txt.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-          }catch(e){
-            tweeterNames = ['infirmiere75','Parentdu92','citoyen_paris','UrgencesIDF','JournalLocal'];
-          }finally{
-            namesLoaded = true;
-            flushQueue();
-          }
-        })();
+      // ====== OUTILS GÉNÉRAUX ======
+      function escapeHtml(s){return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
+      function makeHandle(name){
+        const handle=(name||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-z0-9]/g,'').slice(0,15);
+        return '@'+(handle||'user');
       }
-      loadTweeterNames();
-
-      function pickRandomName(){
-        if (!tweeterNames.length) return 'citoyen_paris';
-        const i = Math.floor(Math.random() * tweeterNames.length);
-        return tweeterNames[i];
+      function avatarBg(text){
+        let hash=0; for(let i=0;i<(text||'').length;i++){hash=(hash<<5)-hash+text.charCodeAt(i);hash|=0}
+        const hue=Math.abs(hash)%360;return`hsl(${hue} 70% 45%)`;
       }
-
-      // Reconnaît « aléatoire » (avec accent) et tolère « aleatoire » (sans accent)
+      function initialsOf(name){return((name||'').match(/\b\p{L}/gu)||['?']).slice(0,2).join('').toUpperCase();}
+      function safeSlugLower(name){
+        return (name||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'')
+          .replace(/\s+/g,'_').replace(/[^a-z0-9._-]/g,'').slice(0,64)||'user';
+      }
       function isAleatoire(value){
         if (!value) return false;
         const s = String(value).trim().toLowerCase();
         if (s === 'aléatoire') return true;
         return s.normalize('NFD').replace(/\p{Diacritic}/gu,'') === 'aleatoire';
+      }
+
+      // ====== CACHE LOCAL (RESTORE AFTER RELOAD) ======
+      const CACHE_KEY = 'rempar-tweets-cache-v1'; // bump if structure changes
+      const CACHE_LIMIT = 200;
+
+      /** state kept in memory (descending by at_ms) */
+      let stateTweets = []; // array of tweet objects {id, at_ms, emetteur, texte}
+
+      function loadCache(){
+        try{
+          const raw = localStorage.getItem(CACHE_KEY);
+          if(!raw) return;
+          const arr = JSON.parse(raw);
+          if(Array.isArray(arr)) stateTweets = arr.filter(t => t && t.id && t.at_ms);
+        }catch(_){}
+      }
+      function saveCache(){
+        try{
+          const slim = stateTweets
+            .slice(0, CACHE_LIMIT)
+            .map(({id, at_ms, emetteur, texte}) => ({id, at_ms, emetteur, texte}));
+          localStorage.setItem(CACHE_KEY, JSON.stringify(slim));
+        }catch(_){}
+      }
+      function addToStateAndCache(tweets){
+        // merge unique by id, keep most recent first
+        const map = new Map(stateTweets.map(t => [t.id, t]));
+        for(const t of tweets){
+          if(t && t.id) map.set(t.id, t);
+        }
+        stateTweets = Array.from(map.values())
+          .sort((a,b)=>b.at_ms - a.at_ms)
+          .slice(0, CACHE_LIMIT);
+        saveCache();
       }
 
       // ====== HASHTAGS / TENDANCES + HISTORIQUE ======
@@ -226,13 +230,15 @@
         while((m = re.exec(text)) !== null){ out.push(m[2].toLowerCase()); }
         return out;
       }
-
       function registerHashtagsFromTweet(t){
         const tags = extractHashtags(t.texte);
         for(const tag of tags){ hashtagMap.set(tag, (hashtagMap.get(tag)||0) + 1); }
+      }
+      function rebuildTrendsFromState(){
+        hashtagMap.clear();
+        for(const t of stateTweets){ registerHashtagsFromTweet(t); }
         updateTrendsUI();
       }
-
       function updateTrendsUI(){
         const arr = Array.from(hashtagMap.entries())
           .sort((a,b)=>b[1]-a[1])
@@ -258,7 +264,7 @@
           cards.forEach(c => c.style.display = '');
           return;
         }
-        const normalized = `#${tag}`;
+        const normalized = `#${tag}`; // tag is already lowercased
         cards.forEach(c=>{
           const text = c.querySelector('.tweet-text')?.textContent?.toLowerCase() || '';
           c.style.display = text.includes(normalized) ? '' : 'none';
@@ -270,17 +276,12 @@
         const m = h.match(/^tag=(.+)$/);
         return m ? decodeURIComponent(m[1]) : null;
       }
-
       function pushHash(tag){
         const url = new URL(window.location);
-        if(tag){
-          url.hash = `tag=${encodeURIComponent(tag)}`;
-        } else {
-          url.hash = '';
-        }
+        if(tag){ url.hash = `tag=${encodeURIComponent(tag)}`; }
+        else { url.hash = ''; }
         history.pushState({ tag: tag || null }, '', url);
       }
-
       function updateFilterPill(){
         if(activeTag){
           pillText.textContent = `Filtre actif : #${activeTag}`;
@@ -290,21 +291,23 @@
           pillText.textContent = '';
         }
       }
-
       function applyTag(tag, push){
-        activeTag = tag || null;
+        activeTag = tag ? String(tag).toLowerCase() : null;
         filterFeedByHashtag(activeTag);
         updateTrendsUI();
         updateFilterPill();
         if(push) pushHash(activeTag);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
-
       pillClearBtn?.addEventListener('click', () => applyTag(null, true));
       window.addEventListener('popstate', () => { applyTag(getTagFromHash(), false); });
-      window.addEventListener('load', () => { applyTag(getTagFromHash(), false); });
 
-      // ====== CONTENU / TWEETS ======
+      // ====== RENDU DES TWEETS ======
+      const timers=new Map();
+      function hashStr(s){let h=2166136261>>>0;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+      const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+      const jitterMs=(min,max)=>Math.floor(min+Math.random()*(max-min));
+
       function replaceImgShortcode(text){
         if(!text)return'';
         return text.replace(/\[img\s+([^\]\s]+\.(?:png|jpg|jpeg|gif))\]/gi,(m,fname)=>{
@@ -312,17 +315,22 @@
           return `<img src="/static/images/${safe}" alt="">`;
         });
       }
-
-      const timers=new Map();
-      function hashStr(s){let h=2166136261>>>0;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
-      const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
-      const jitterMs=(min,max)=>Math.floor(min+Math.random()*(max-min));
-
-      const tweetQueue = [];
-      function enqueueTweet(t){ tweetQueue.push(t); if(namesLoaded) flushQueue(); }
-      function flushQueue(){ while(tweetQueue.length){ addTweetNow(tweetQueue.shift()); } }
+      function makeHandle(name){
+        const handle=(name||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-z0-9]/g,'').slice(0,15);
+        return '@'+(handle||'user');
+      }
+      function avatarBg(text){
+        let hash=0; for(let i=0;i<(text||'').length;i++){hash=(hash<<5)-hash+text.charCodeAt(i);hash|=0}
+        const hue=Math.abs(hash)%360;return`hsl(${hue} 70% 45%)`;
+      }
+      function initialsOf(name){return((name||'').match(/\b\p{L}/gu)||['?']).slice(0,2).join('').toUpperCase();}
+      function safeSlugLower(name){
+        return (name||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'')
+          .replace(/\s+/g,'_').replace(/[^a-z0-9._-]/g,'').slice(0,64)||'user';
+      }
 
       function tweetCard(t){
+        // Affichage du nom : random si demandé
         const displayName = isAleatoire(t.emetteur) ? pickRandomName() : (t.emetteur || 'Utilisateur');
 
         const initials=initialsOf(displayName);
@@ -370,15 +378,7 @@
         });
 
         seedAndAnimate(card,t,displayName);
-        registerHashtagsFromTweet(t);
         return card;
-      }
-
-      function addTweetNow(t){
-        if(idle) idle.style.display='none';
-        const card=tweetCard(t);
-        feed.prepend(card);
-        if(activeTag) filterFeedByHashtag(activeTag);
       }
 
       function seedAndAnimate(card,t,displayName){
@@ -400,11 +400,101 @@
       const observer=new MutationObserver(()=>{const live=new Set([...feed.querySelectorAll('.tweet-card')].map(c=>c.dataset.tid));for(const tid of [...timers.keys()])if(!live.has(tid))stopTimer(tid);});
       observer.observe(feed,{childList:true});
 
+      // ====== FILE D’ATTENTE & NOMS ALÉATOIRES ======
+      let tweeterNames = [];
+      let namesLoaded = false;
+
+      async function loadTweeterNames(){
+        try{
+          let resp = await fetch('/static/data/tweeter.txt', { cache: 'no-store' });
+          if(!resp.ok) resp = await fetch('/data/tweeter.txt', { cache: 'no-store' });
+          const txt = await resp.text();
+          tweeterNames = txt.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+        }catch(e){
+          tweeterNames = ['infirmiere75','Parentdu92','citoyen_paris','UrgencesIDF','JournalLocal'];
+        }finally{
+          namesLoaded = true;
+          flushQueue();
+        }
+      }
+      function pickRandomName(){
+        if (!tweeterNames.length) return 'citoyen_paris';
+        const i = Math.floor(Math.random() * tweeterNames.length);
+        return tweeterNames[i];
+      }
+
+      const tweetQueue = [];
+      function enqueueTweet(t){ tweetQueue.push(t); if(namesLoaded) flushQueue(); }
+      function flushQueue(){ while(tweetQueue.length){ addTweetNow(tweetQueue.shift()); } }
+
+      // ====== RENDER HELPERS ======
+      function clearFeedDOM(){
+        // also stop timers
+        for(const id of [...timers.keys()]) stopTimer(id);
+        feed.innerHTML = '';
+      }
+      function renderFromState(){
+        if(!stateTweets.length){
+          if(idle) idle.style.display = '';
+          return;
+        }
+        if(idle) idle.style.display = 'none';
+        clearFeedDOM();
+        // newest first
+        for(const t of stateTweets){
+          const card = tweetCard(t);
+          feed.appendChild(card); // append to keep chronological order from oldest at top? We want newest top:
+        }
+        // Move newest to top: stateTweets sorted desc, so append in order then reverse via prepend
+        clearFeedDOM();
+        for(const t of stateTweets){
+          const card = tweetCard(t);
+          feed.prepend(card);
+        }
+        rebuildTrendsFromState();
+        if(activeTag) filterFeedByHashtag(activeTag);
+      }
+      function addTweetNow(t){
+        // put into state/cache first so reloads are consistent
+        addToStateAndCache([t]);
+        if(idle) idle.style.display='none';
+        const card=tweetCard(t);
+        feed.prepend(card);
+        // update trends incrementally
+        registerHashtagsFromTweet(t);
+        updateTrendsUI();
+        if(activeTag) filterFeedByHashtag(activeTag);
+      }
+
       // ====== SSE ======
-      const evt=new EventSource("{{ url_for('stream_tweets') }}");
-      evt.addEventListener('tweet',(e)=>{try{const payload=JSON.parse(e.data);for(const t of payload) enqueueTweet(t);}catch{}});
-      evt.onmessage=(e)=>{try{const payload=JSON.parse(e.data);if(Array.isArray(payload))for(const t of payload) enqueueTweet(t);}catch{}};
-      evt.addEventListener('decompte',(e)=>{try{const{target_iso}=JSON.parse(e.data||"{}");if(target_iso)window.location.replace("/");}catch{}});
+      function startSSE(){
+        const evt=new EventSource("{{ url_for('stream_tweets') }}");
+        evt.addEventListener('tweet',(e)=>{try{
+          const payload=JSON.parse(e.data);
+          const arr = Array.isArray(payload) ? payload : [payload];
+          for(const t of arr) enqueueTweet(t);
+        }catch{}});
+        evt.onmessage=(e)=>{try{
+          const payload=JSON.parse(e.data);
+          if(Array.isArray(payload)) for(const t of payload) enqueueTweet(t);
+        }catch{}};
+        evt.addEventListener('decompte',(e)=>{try{
+          const{target_iso}=JSON.parse(e.data||"{}");if(target_iso)window.location.replace("/");
+        }catch{}});
+      }
+
+      // ====== BOOT ======
+      (function boot(){
+        // 1) Load name list (for "aléatoire")
+        loadTweeterNames();
+        // 2) Load cached tweets and render immediately
+        loadCache();
+        renderFromState();
+        // 3) Apply tag from URL (after render so it filters)
+        applyTag(getTagFromHash(), false);
+        // 4) Start SSE for new tweets
+        startSSE();
+      })();
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
