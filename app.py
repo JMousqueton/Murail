@@ -7,6 +7,7 @@ import re
 import threading
 import time
 from datetime import datetime, date, timedelta
+import pytz
 from typing import List, Dict, Any, Optional
 
 from dateutil import parser as dtparser
@@ -23,7 +24,7 @@ from werkzeug.utils import secure_filename
 
 load_dotenv()
 
-APP_TZ = gettz("Europe/Paris")
+
 ROLES = [
     "Communication", "Décision", "Informatique",
     "Juridique / Finance", "Ressources Humaines",
@@ -36,6 +37,8 @@ ANIMATOR_PASSWORD  = os.environ.get("ANIMATOR_PASSWORD", "changeme_animator")
 OBSERVER_PASSWORD  = os.environ.get("OBSERVER_PASSWORD", "changeme_observer")
 APP_ID             = os.environ.get("APP_ID", "REMPAR-DEMO-LOCAL")
 TRACKING           = os.environ.get("TRACKING", "")
+TZ = os.getenv("TZ", "Europe/Paris")
+APP_TZ = gettz(TZ)
 
 UPLOAD_FOLDER = os.path.join("static", "images")
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
@@ -56,6 +59,12 @@ RAW_ROWS: List[Dict[str, Any]] = []
 
 # NEW: store parsed "decompte" windows
 DECOMPTE_EVENTS: List[Dict[str, Any]] = []  # {start: datetime, end: datetime, minutes: int}
+
+# Make TZ available in all templates
+@app.context_processor
+def inject_globals():
+    return dict(TZ=TZ)
+
 
 def get_active_decompte_end(now: Optional[datetime] = None) -> Optional[datetime]:
     """If a decompte is active (start <= now < end) return its end datetime, else None."""

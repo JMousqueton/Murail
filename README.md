@@ -114,6 +114,7 @@ ANIMATOR_PASSWORD=MonMotDePasseAnimateur
 OBSERVER_PASSWORD=MonMotDePasseObservateur
 APP_ID=SIM-REMPAR25
 FLASK_SECRET=ma-cle-ultra-secrete
+TZ=Europe/Paris
 ```
 
 ### 4. Lancer l’application
@@ -153,7 +154,6 @@ En mode démo :
 - [ ] Ajout d’un **mode clair/sombre** (préférence sauvegardée dans le navigateur)
 - [ ] Support **multilingue** (chargement des textes depuis un fichier de traduction)
 - [ ] Possibilité de publier ses propres tweet (limité à la fonction comm)
-- [✅] ~~Ajouter une page pour les observateurs~~
 - [ ] Générer un PDF à partir des remarques de l'**observateur**
 
 ---

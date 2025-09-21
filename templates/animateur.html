@@ -111,14 +111,15 @@ function roleWithIconHTML(role){
   const el = document.getElementById('clock-text');
   if (!el) return;
   const now = new Date();
-  el.textContent = now.toLocaleString('fr-FR', { timeZone:'Europe/Paris' });
+  // el.textContent = now.toLocaleString('fr-FR', { timeZone:'Europe/Paris' });
+  el.textContent = now.toLocaleString('fr-FR', { timeZone:'{{ TZ }}' });
 }
 setInterval(updateClock, 1000); updateClock();
 
       // ---------- Utils ----------
       function hhmmFromMs(ms){
         return new Date(ms).toLocaleTimeString('fr-FR', {
-          timeZone: 'Europe/Paris', hour:'2-digit', minute:'2-digit'
+          timeZone: '{{ TZ }}', hour:'2-digit', minute:'2-digit'
         });
       }
       function escapeHtml(s){

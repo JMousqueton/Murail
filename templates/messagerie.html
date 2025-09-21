@@ -179,7 +179,8 @@ function roleWithIconHTML(role){
       }
 
       function formatTime(ms){
-        return new Date(ms).toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute:'2-digit' });
+        //return new Date(ms).toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute:'2-digit' });
+        return new Date(ms).toLocaleTimeString('fr-FR', { timeZone: '{{ TZ }}', hour: '2-digit', minute:'2-digit' });
       }
 
       function renderProcessedBadge(val){

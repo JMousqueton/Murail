@@ -165,7 +165,7 @@
 
       function updateClock(){
         const d = new Date();
-        document.getElementById('clock').textContent = d.toLocaleString('fr-FR',{timeZone:'Europe/Paris'});
+        document.getElementById('clock').textContent = d.toLocaleString('fr-FR',{timeZone:'{{ TZ }}'});
       }
       setInterval(updateClock,1000); updateClock();
 
@@ -266,7 +266,7 @@
               <div class="d-flex flex-wrap align-items-baseline gap-2 name-row">
                 <strong>${escapeHtml(displayName)}</strong>
                 <span class="handle">${handle}</span>
-                <span class="meta">· ${when.toLocaleString('fr-FR',{timeZone:'Europe/Paris'})}</span>
+                <span class="meta">· ${when.toLocaleString('fr-FR',{timeZone:'{{ TZ }}'})}</span>
               </div>
               <div class="tweet-text mt-2">${tweetHtml}</div>
               <div class="eng-row d-flex align-items-center gap-4 mt-3 meta">

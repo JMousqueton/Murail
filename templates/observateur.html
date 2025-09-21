@@ -109,7 +109,9 @@ function roleWithIconHTML(role){
       function updateClock(){
         const el = document.getElementById('rtclock');
         if (!el) return;
-        el.textContent = new Date().toLocaleString('fr-FR', { timeZone:'Europe/Paris' });
+        // el.textContent = new Date().toLocaleString('fr-FR', { timeZone:'Europe/Paris' });
+        el.textContent = new Date().toLocaleString('fr-FR', { timeZone:'{{ TZ }}' });
+
       }
       setInterval(updateClock, 1000); updateClock();
 
@@ -117,7 +119,9 @@ function roleWithIconHTML(role){
       const LS_KEY = (id)=> `obsnotes::${APP_ID}::${id}`;
       function hhmm(ms){
         const d = new Date(ms);
-        return d.toLocaleTimeString('fr-FR',{ timeZone:'Europe/Paris', hour:'2-digit', minute:'2-digit' });
+        // return d.toLocaleTimeString('fr-FR',{ timeZone:'Europe/Paris', hour:'2-digit', minute:'2-digit' });
+        return d.toLocaleTimeString('fr-FR',{ timeZone:'{{ TZ }}' , hour:'2-digit', minute:'2-digit' });
+        
       }
       function download(filename, text, type='text/plain'){
         const blob = new Blob([text], {type});
