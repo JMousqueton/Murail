@@ -4,52 +4,74 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Simulation – Réseaux sociaux</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
-  <path d='M90 30c-3 1-6 2-9 2 3-2 5-5 6-9-3 2-7 3-10 4-3-3-7-5-12-5-9 0-16 7-16 16 0 1 0 2 0 3-13-1-25-7-32-17-1 2-2 5-2 8 0 6 3 11 8 14-3 0-5-1-7-2 0 9 6 16 14 18-2 1-4 1-6 1h-1c2 7 9 12 17 12-6 5-14 8-23 8H20c8 5 18 8 28 8 34 0 53-28 53-53v-2c4-2 7-5 9-9z' fill='blue'/>
-</svg>">
+
+    <!-- Favicon SVG (oiseau bleu) -->
+    <link rel="icon" type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M90 30c-3 1-6 2-9 2 3-2 5-5 6-9-3 2-7 3-10 4-3-3-7-5-12-5-9 0-16 7-16 16 0 1 0 2 0 3-13-1-25-7-32-17-1 2-2 5-2 8 0 6 3 11 8 14-3 0-5-1-7-2 0 9 6 16 14 18-2 1-4 1-6 1h-1c2 7 9 12 17 12-6 5-14 8-23 8H20c8 5 18 8 28 8 34 0 53-28 53-53v-2c4-2 7-5 9-9z' fill='blue'/%3E%3C/svg%3E">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" rel="stylesheet">
+
     <style>
       :root { --cc-border: rgba(255,255,255,.12); --cc-muted:#9aa0a6; }
       body { background: #0b0f14; color: #fff; font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif; }
 
       .tw-header { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(6px); background: rgba(0,0,0,.4); border-bottom: 1px solid var(--cc-border); }
 
-      /* layout */
+      /* Bandeau d'alerte */
+      .alert-banner{
+        border: 1px solid #dc3545;
+        background: rgba(220,53,69,.10);
+        color: #ff4d4f;
+        border-radius: .75rem;
+        text-align: center;
+        padding: .6rem 1rem;
+        margin: .75rem auto 1.5rem;
+        max-width: 720px;
+        font-weight: 700;
+        letter-spacing: .06em;
+      }
+      .alert-sticky{
+        position: sticky;
+        top: var(--header-h, 56px);
+        z-index: 9;  /* header est z-index:10 */
+      }
+
       .col-center { max-width: 750px; border-left: 1px solid var(--cc-border); border-right: 1px solid var(--cc-border); }
       .right-rail { position: sticky; top: 64px; }
       .right-card { background: rgba(255,255,255,.03); border: 1px solid var(--cc-border); border-radius: 1rem; }
 
-      /* tweet card */
       .tweet-card { border-bottom: 1px solid var(--cc-border); padding: 1rem; }
       .tweet-card:first-child { border-top: 1px solid var(--cc-border); }
-      .avatar { width: 48px; height: 48px; border-radius: 50%; display:inline-flex; align-items:center; justify-content:center; font-weight:700; }
+      .avatar { width: 48px; height: 48px; border-radius: 50%; position: relative; overflow: hidden; flex: 0 0 48px; }
+      .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%; }
+      .avatar-fallback { 
+        position: absolute; inset: 0; display: none; 
+        align-items: center; justify-content: center; font-weight: 700; 
+        border-radius: 50%;
+      }
+
       .handle, .meta { color: var(--cc-muted); }
       .tweet-text { white-space: pre-wrap; font-size: 1.05rem; }
       .tweet-text img{ max-width:100%; height:auto; border-radius:.75rem; margin-top:.5rem; border:1px solid var(--cc-border); }
       .eng-row .eng-btn { cursor: default; user-select: none; }
       .small-muted { color: var(--cc-muted); }
 
-      /* trends */
       .trend { display:flex; justify-content:space-between; align-items:baseline; padding:.5rem .75rem; border-radius:.5rem; }
       .trend:hover { background: rgba(255,255,255,.06); }
       .trend .count { color: var(--cc-muted); font-size:.85rem; }
       .trend .tag { font-weight:600; }
       .trend.active { outline: 1px solid rgba(13,110,253,.35); background: rgba(13,110,253,.1); }
 
-      /* mobile toggle */
       .mobile-trends-toggle { display:none; }
-      @media (max-width: 991.98px) { /* < lg */
+      @media (max-width: 991.98px) {
         .col-center { border-left: none; border-right: none; }
         .mobile-trends-toggle { display:block; }
       }
     </style>
   </head>
   <body>
-    <!-- Header -->
     <div class="tw-header">
       <div class="container-fluid">
         <div class="d-flex align-items-center justify-content-between px-3 py-2">
@@ -64,16 +86,19 @@
       </div>
     </div>
 
-    <!-- Main layout -->
+    <!-- Bandeau central sous l’en-tête -->
+    <div class="container-fluid">
+      <div class="alert-banner alert-sticky" role="status" aria-live="polite">
+        Exercice-Exercice-Exercice
+      </div>
+    </div>
+
     <div class="container-fluid">
       <div class="row justify-content-center g-0">
-        <!-- center feed -->
         <div class="col-12 col-lg-7 col-center">
           <main id="feed"></main>
           <div class="text-center py-5 small-muted" id="idle">En attente des prochains tweets…</div>
         </div>
-
-        <!-- right rail: trends -->
         <aside class="col-12 col-lg-4 px-3 px-lg-4">
           <div id="trendsCollapse" class="collapse d-lg-block">
             <div class="right-rail pt-3">
@@ -91,239 +116,224 @@
       </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- ——— PSEUDOS ALÉATOIRES (chargement + file d’attente) ——— -->
+    <script>
+      let tweeterNames = [];
+      let namesLoaded = false;
+
+      function loadTweeterNames(){
+        return (async ()=>{
+          try{
+            let resp = await fetch('/static/data/tweeter.txt', { cache: 'no-store' });
+            if(!resp.ok){
+              resp = await fetch('/data/tweeter.txt', { cache: 'no-store' });
+            }
+            const txt = await resp.text();
+            tweeterNames = txt.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+          }catch(e){
+            // Fallback minimal si le fichier n'est pas dispo
+            tweeterNames = ['infirmiere75','Parentdu92','citoyen_paris','UrgencesIDF','JournalLocal'];
+          }finally{
+            namesLoaded = true;
+            flushQueue();
+          }
+        })();
+      }
+      loadTweeterNames();
+
+      function pickRandomName(){
+        if (!tweeterNames.length) return 'citoyen_paris';
+        const i = Math.floor(Math.random() * tweeterNames.length);
+        return tweeterNames[i];
+      }
+
+      // Reconnaît « aléatoire » (avec accent) et tolère « aleatoire » (sans accent)
+      function isAleatoire(value){
+        if (!value) return false;
+        const s = String(value).trim().toLowerCase();
+        if (s === 'aléatoire') return true;
+        return s.normalize('NFD').replace(/\p{Diacritic}/gu,'') === 'aleatoire';
+      }
+    </script>
+
+    <!-- ——— APP ——— -->
     <script>
       const feed = document.getElementById('feed');
       const idle = document.getElementById('idle');
       const trendsList = document.getElementById('trends');
       const trendCount = document.getElementById('trend-count');
 
-      // ----- utils -----
       function updateClock(){
         const d = new Date();
-        const el = document.getElementById('clock');
-        if (el) el.textContent = d.toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
+        document.getElementById('clock').textContent = d.toLocaleString('fr-FR',{timeZone:'Europe/Paris'});
       }
-      setInterval(updateClock, 1000); updateClock();
+      setInterval(updateClock,1000); updateClock();
+
+      function setBannerTop(){
+        const header = document.querySelector('.tw-header');
+        const h = header ? header.offsetHeight : 56;
+        document.documentElement.style.setProperty('--header-h', h + 'px');
+      }
+      window.addEventListener('load', setBannerTop);
+      window.addEventListener('resize', setBannerTop);
 
       function makeHandle(name){
-        const handle = (name||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'')
-                        .replace(/[^a-z0-9]/g,'').slice(0,15);
-        return '@' + (handle || 'user');
+        const handle=(name||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-z0-9]/g,'').slice(0,15);
+        return '@'+(handle||'user');
       }
       function avatarBg(text){
-        let hash = 0; for (let i=0; i<(text||'').length; i++){ hash = (hash<<5) - hash + text.charCodeAt(i); hash|=0 }
-        const hue = Math.abs(hash) % 360; return `hsl(${hue} 70% 45%)`;
+        let hash=0; for(let i=0;i<(text||'').length;i++){hash=(hash<<5)-hash+text.charCodeAt(i);hash|=0}
+        const hue=Math.abs(hash)%360;return`hsl(${hue} 70% 45%)`;
       }
-      function escapeHtml(s){
-        return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+      function escapeHtml(s){return(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
+      function initialsOf(name){return((name||'').match(/\b\p{L}/gu)||['?']).slice(0,2).join('').toUpperCase();}
+      function safeSlugLower(name){
+        return (name||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'')
+          .replace(/\s+/g,'_').replace(/[^a-z0-9._-]/g,'').slice(0,64)||'user';
       }
-      function initialsOf(name){
-        return ((name||'').match(/\b\p{L}/gu) || ['?']).slice(0,2).join('').toUpperCase();
-      }
-      function hashStr(s){
-        let h = 2166136261 >>> 0; for (let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
-        return h >>> 0;
-      }
-      const clamp = (n,min,max)=>Math.max(min, Math.min(max,n));
-      const jitterMs = (min,max)=>Math.floor(min + Math.random()*(max-min));
 
-      // ----- hashtags / trends -----
-      const hashtagMap = new Map(); // tag(lower) -> count
-      let activeTag = null;
-
-      // extract hashtags from text (Unicode letters/digits/_), case-insensitive
+      // Tendances
+      const hashtagMap=new Map(); let activeTag=null;
       function extractHashtags(text){
-        if (!text) return [];
-        const re = /(^|[\s.,;:!?()\[\]{}"'])#([\p{L}\p{N}_]{1,50})/giu;
-        const out = [];
-        let m;
-        while ((m = re.exec(text)) !== null){
-          out.push(m[2].toLowerCase());
-        }
-        return out;
+        if(!text)return[];const re=/(^|[\s.,;:!?()\[\]{}"'])#([\p{L}\p{N}_]{1,50})/giu;const out=[];let m;
+        while((m=re.exec(text))!==null){out.push(m[2].toLowerCase());}return out;
       }
-
       function updateTrendsUI(){
-        const arr = Array.from(hashtagMap.entries())
-          .sort((a,b)=> b[1]-a[1]) // by count
-          .slice(0,10);
-
-        trendsList.innerHTML = '';
-        for (const [tag, count] of arr){
-          const div = document.createElement('div');
-          div.className = 'trend' + (activeTag === tag ? ' active' : '');
-          div.innerHTML = `<span class="tag">#${escapeHtml(tag)}</span><span class="count">${count}</span>`;
-          div.addEventListener('click', ()=>{
-            // toggle filter
-            activeTag = (activeTag === tag) ? null : tag;
-            filterFeedByHashtag(activeTag);
-            updateTrendsUI();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          });
+        const arr=Array.from(hashtagMap.entries()).sort((a,b)=>b[1]-a[1]).slice(0,10);
+        trendsList.innerHTML='';
+        for(const[tag,count]of arr){
+          const div=document.createElement('div');div.className='trend'+(activeTag===tag?' active':'');
+          div.innerHTML=`<span class="tag">#${escapeHtml(tag)}</span><span class="count">${count}</span>`;
+          div.addEventListener('click',()=>{activeTag=(activeTag===tag)?null:tag;filterFeedByHashtag(activeTag);updateTrendsUI();window.scrollTo({top:0,behavior:'smooth'});});
           trendsList.appendChild(div);
         }
-        trendCount.textContent = arr.length ? `${arr.length} sujets` : 'Aucun sujet';
+        trendCount.textContent=arr.length?`${arr.length} sujets`:'Aucun sujet';
       }
-
       function registerHashtagsFromTweet(t){
-        const tags = extractHashtags(t.texte);
-        for (const tag of tags){
-          hashtagMap.set(tag, (hashtagMap.get(tag) || 0) + 1);
-        }
+        const tags=extractHashtags(t.texte);
+        for(const tag of tags){hashtagMap.set(tag,(hashtagMap.get(tag)||0)+1);}
         updateTrendsUI();
       }
-
       function filterFeedByHashtag(tag){
-        const cards = feed.querySelectorAll('.tweet-card');
-        if (!tag){
-          cards.forEach(c => c.style.display = '');
-          return;
-        }
-        const normalized = `#${tag}`;
+        const cards=feed.querySelectorAll('.tweet-card');
+        if(!tag){cards.forEach(c=>c.style.display='');return;}
+        const normalized=`#${tag}`;
         cards.forEach(c=>{
-          const text = c.querySelector('.tweet-text')?.textContent?.toLowerCase() || '';
-          c.style.display = text.includes(normalized) ? '' : 'none';
+          const text=c.querySelector('.tweet-text')?.textContent?.toLowerCase()||'';
+          c.style.display=text.includes(normalized)?'':'none';
         });
       }
 
-      // ----- convert [img filename.ext] to <img src="/statics/images/filename.ext"> -----
       function replaceImgShortcode(text){
-        if (!text) return '';
-        // matches [img name.png] / [img photo.jpg] / [img banner.gif]
-        return text.replace(/\[img\s+([^\]\s]+\.(?:png|jpg|jpeg|gif))\]/gi, (m, fname)=>{
-          const safe = fname.replace(/[^a-zA-Z0-9._-]/g,'');
-          return `<img src="/static/images/${safe}" alt="">`;
+        if(!text)return'';return text.replace(/\[img\s+([^\]\s]+\.(?:png|jpg|jpeg|gif))\]/gi,(m,fname)=>{
+          const safe=fname.replace(/[^a-zA-Z0-9._-]/g,'');return `<img src="/static/images/${safe}" alt="">`;
         });
       }
 
-      // ----- tweet card + dynamic engagement -----
-      const timers = new Map(); // tid -> intervalId
+      // Compteurs dynamiques
+      const timers=new Map();
+      function hashStr(s){let h=2166136261>>>0;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+      const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+      const jitterMs=(min,max)=>Math.floor(min+Math.random()*(max-min));
+
+      // FILE D’ATTENTE POUR ATTENDRE LES NOMS
+      const tweetQueue = [];
+      function enqueueTweet(t){ tweetQueue.push(t); if(namesLoaded) flushQueue(); }
+      function flushQueue(){ while(tweetQueue.length){ addTweetNow(tweetQueue.shift()); } }
 
       function tweetCard(t){
-        const initials = initialsOf(t.emetteur);
-        const handle = makeHandle(t.emetteur);
-        const when = new Date(t.at_ms);
+        // Nom affiché : si t.emetteur == "aléatoire" (avec ou sans accent), on pioche dans le fichier
+        const displayName = isAleatoire(t.emetteur) ? pickRandomName() : (t.emetteur || 'Utilisateur');
 
-        // prepare tweet HTML (with image shortcode replacement)
-        const tweetHtml = replaceImgShortcode(escapeHtml(t.texte))
-                          // allow the <img> we just created (escapeHtml already ran)
-                          .replace(/&lt;img /g,'<img ').replace(/&gt;/g,'>');
+        const initials=initialsOf(displayName);
+        const handle=makeHandle(displayName);
+        const when=new Date(t.at_ms);
+        const slug=safeSlugLower(displayName);
 
-        const card = document.createElement('article');
-        card.className = 'tweet-card';
-        card.dataset.tid = t.id;
-        card.innerHTML = `
+        const tweetHtml=replaceImgShortcode(escapeHtml(t.texte))
+                        .replace(/&lt;img /g,'<img ').replace(/&gt;/g,'>');
+
+        const card=document.createElement('article');
+        card.className='tweet-card';card.dataset.tid=t.id;
+        card.innerHTML=`
           <div class="d-flex gap-3">
-            <div class="avatar flex-shrink-0" style="background:${avatarBg(t.emetteur)}">${initials}</div>
+            <div class="avatar flex-shrink-0" role="img">
+              <img src="/static/images/tweet/${slug}.jpg" alt=""
+                   onerror="if(this.src.endsWith('.jpg')){this.src='/static/images/tweet/${slug}.png';}else{this.style.display='none';this.nextElementSibling.style.display='flex';}">
+              <div class="avatar-fallback" style="background:${avatarBg(displayName)}">${initials}</div>
+            </div>
             <div class="flex-grow-1">
-              <div class="d-flex flex-wrap align-items-baseline gap-2">
-                <strong>${escapeHtml(t.emetteur)}</strong>
+              <div class="d-flex flex-wrap align-items-baseline gap-2 name-row">
+                <strong>${escapeHtml(displayName)}</strong>
                 <span class="handle">${handle}</span>
-                <span class="meta">· ${when.toLocaleString('fr-FR',{ timeZone:'Europe/Paris' })}</span>
+                <span class="meta">· ${when.toLocaleString('fr-FR',{timeZone:'Europe/Paris'})}</span>
               </div>
               <div class="tweet-text mt-2">${tweetHtml}</div>
-
               <div class="eng-row d-flex align-items-center gap-4 mt-3 meta">
-                <span class="eng-btn" title="Répondre"><i class="bi bi-chat"></i></span>
-                <span class="eng-btn" title="Retweeter">
-                  <i class="bi bi-arrow-repeat"></i>
-                  <span class="rt-count">0</span>
-                </span>
-                <span class="eng-btn" title="J’aime">
-                  <i class="bi bi-heart"></i>
-                  <span class="like-count">0</span>
-                </span>
-                <span class="eng-btn" title="Partager"><i class="bi bi-upload"></i></span>
+                <span class="eng-btn"><i class="bi bi-chat"></i></span>
+                <span class="eng-btn"><i class="bi bi-arrow-repeat"></i> <span class="rt-count">0</span></span>
+                <span class="eng-btn"><i class="bi bi-heart"></i> <span class="like-count">0</span></span>
+                <span class="eng-btn"><i class="bi bi-upload"></i></span>
               </div>
             </div>
           </div>`;
 
-        // seed + animation
-        seedAndAnimate(card, t);
-        // register hashtags
+        // Check bleu si l'image existe
+        const img=card.querySelector('img');
+        img.addEventListener('load',()=>{
+          if(img.style.display!=='none'){
+            const nameRow=card.querySelector('.name-row strong');
+            if(nameRow && !nameRow.querySelector('.fa-circle-check')){
+              nameRow.insertAdjacentHTML('beforeend',' <i class="fa-solid fa-circle-check text-primary"></i>');
+            }
+          }
+        });
+
+        // Seed/animation selon le nom affiché
+        seedAndAnimate(card,t,displayName);
         registerHashtagsFromTweet(t);
         return card;
       }
 
-      function addTweet(t){
-        if (idle) idle.style.display = 'none';
-        const card = tweetCard(t);
+      function addTweetNow(t){
+        if(idle) idle.style.display='none';
+        const card=tweetCard(t);
         feed.prepend(card);
-        if (activeTag) filterFeedByHashtag(activeTag);
+        if(activeTag) filterFeedByHashtag(activeTag);
       }
 
-      // Seed counters based on age and pseudo-popularity; animate with decreasing probability.
-      function seedAndAnimate(card, t){
-        const likeEl = card.querySelector('.like-count');
-        const rtEl   = card.querySelector('.rt-count');
-        const ageSec = Math.max(0, (Date.now() - t.at_ms) / 1000);
-        const h = hashStr((t.emetteur||'') + '|' + (t.texte||''));
-        const pop = (h % 7) + 1; // 1..7
-        const baseLike = Math.floor(Math.log10(ageSec + 10) * pop);
-        const baseRt   = Math.floor(baseLike * (0.25 + (h % 3) * 0.1));
-
-        likeEl.textContent = String(Math.max(0, baseLike));
-        rtEl.textContent   = String(Math.max(0, baseRt));
-
-        const tid = card.dataset.tid;
-        startTimer(tid, () => {
-          if (document.hidden) return; // pause when tab not visible
-          const curLike = parseInt(likeEl.textContent || '0', 10);
-          const curRt   = parseInt(rtEl.textContent   || '0', 10);
-
-          const pLike = clamp(0.28 / (1 + curLike / 15), 0.01, 0.35);
-          if (Math.random() < pLike) likeEl.textContent = String(curLike + 1);
-
-          const pRt = clamp(pLike * 0.35, 0.005, 0.12);
-          if (Math.random() < pRt) rtEl.textContent = String(curRt + 1);
-        }, jitterMs(1400, 3800));
+      function seedAndAnimate(card,t,displayName){
+        const likeEl=card.querySelector('.like-count');const rtEl=card.querySelector('.rt-count');
+        const ageSec=Math.max(0,(Date.now()-t.at_ms)/1000);
+        const h=hashStr((displayName||'')+'|'+(t.texte||''));const pop=(h%7)+1;
+        const baseLike=Math.floor(Math.log10(ageSec+10)*pop);const baseRt=Math.floor(baseLike*(0.25+(h%3)*0.1));
+        likeEl.textContent=String(Math.max(0,baseLike));rtEl.textContent=String(Math.max(0,baseRt));
+        const tid=card.dataset.tid;
+        startTimer(tid,()=>{
+          if(document.hidden)return;
+          const curLike=parseInt(likeEl.textContent||'0',10);const curRt=parseInt(rtEl.textContent||'0',10);
+          const pLike=clamp(0.28/(1+curLike/15),0.01,0.35);if(Math.random()<pLike)likeEl.textContent=String(curLike+1);
+          const pRt=clamp(pLike*0.35,0.005,0.12);if(Math.random()<pRt)rtEl.textContent=String(curRt+1);
+        },jitterMs(1400,3800));
       }
+      function startTimer(id,fn,interval){stopTimer(id);const x=setInterval(fn,interval);timers.set(id,x);}
+      function stopTimer(id){const x=timers.get(id);if(x){clearInterval(x);timers.delete(id);}}
+      const observer=new MutationObserver(()=>{const live=new Set([...feed.querySelectorAll('.tweet-card')].map(c=>c.dataset.tid));for(const tid of [...timers.keys()])if(!live.has(tid))stopTimer(tid);});
+      observer.observe(feed,{childList:true});
 
-      function startTimer(id, fn, interval){ stopTimer(id); const x = setInterval(fn, interval); timers.set(id, x); }
-      function stopTimer(id){ const x = timers.get(id); if (x){ clearInterval(x); timers.delete(id); } }
-
-      // Clean timers if cards are removed
-      const observer = new MutationObserver(() => {
-        const live = new Set([...feed.querySelectorAll('.tweet-card')].map(c => c.dataset.tid));
-        for (const tid of [...timers.keys()]) if (!live.has(tid)) stopTimer(tid);
-      });
-      observer.observe(feed, { childList: true });
-
-      // ----- SSE -----
-      const evt = new EventSource("{{ url_for('stream_tweets') }}");
-
-      // normal tweets (including initial replay)
-      evt.addEventListener('tweet', (e)=>{
-        try{
-          const payload = JSON.parse(e.data);
-          if (payload.length > 0 && idle) idle.style.display = 'none';
-          for (const t of payload){ addTweet(t); }
-        }catch{}
-      });
-
-      // fallback if server ever uses default 'message'
-      evt.onmessage = (e) => {
-        try{
-          const payload = JSON.parse(e.data);
-          if (Array.isArray(payload)) for (const t of payload) addTweet(t);
-        }catch{}
-      };
-
-      // 🔴 NEW: live switch to countdown when a "décompte" starts
-      evt.addEventListener('decompte', (e) => {
-        try {
-          const { target_iso } = JSON.parse(e.data || "{}");
-          if (target_iso) window.location.replace("/"); // index will render countdown
-        } catch {}
-      });
-      // Optional: event when décompte ends (no redirect needed here)
-      evt.addEventListener('decompte_end', () => {});
+      // SSE : on met en file si les noms ne sont pas encore chargés
+      const evt=new EventSource("{{ url_for('stream_tweets') }}");
+      evt.addEventListener('tweet',(e)=>{try{const payload=JSON.parse(e.data);for(const t of payload) enqueueTweet(t);}catch{}});
+      evt.onmessage=(e)=>{try{const payload=JSON.parse(e.data);if(Array.isArray(payload))for(const t of payload) enqueueTweet(t);}catch{}};
+      evt.addEventListener('decompte',(e)=>{try{const{target_iso}=JSON.parse(e.data||"{}");if(target_iso)window.location.replace("/");}catch{}});
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
     <footer class="text-center mt-5 p-3 bg-dark text-light">
-    <p>© 2025 <a href="https://github.com/JMousqueton/REMPAR" target="_blank">Julien Mousqueton</a></p>
-    <p>basé sur l'exercice REMPAR25 de l'ANSSI</p>
-  </footer>
+      <p>© 2025 <a href="https://github.com/JMousqueton/REMPAR" target="_blank">Julien Mousqueton</a></p>
+      <p>basé sur l'exercice REMPAR25 de l'ANSSI</p>
+    </footer>
     {{ TRACKING | safe }}
   </body>
 </html>

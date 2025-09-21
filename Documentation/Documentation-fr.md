@@ -40,6 +40,9 @@ Chaque ligne correspond à un événement.
 - Nom de la personne ou entité qui envoie.
 - Exemple : `Direction`, `RSSI`, `Journal Le Monde`.
 
+Pour les tweet si l'`Emetteur` est `aléatoire` alors nous choissirons aléatoirement un pseudo depuis le fichier `tweet.txt` du répertoire `static/data`
+Si un fichier `Emetteur`.png|.jpg existe dans `static/images/tweet/` alors l'image sera l'avatar. 
+
 ---
 
 #### `Destinataire`
