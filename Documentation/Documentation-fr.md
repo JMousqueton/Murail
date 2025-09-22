@@ -105,7 +105,7 @@ Ces colonnes sont uniquement à destination du role d'animateur/facillitateur
 
 ## 🖥️ Interface utilisateur
 
-L’application REMPAR propose plusieurs interfaces web permettant aux participants et aux animateurs de suivre le déroulement de l’exercice.
+L’application  propose plusieurs interfaces web permettant aux participants et aux animateurs de suivre le déroulement de l’exercice.
 
 ---
 
@@ -234,7 +234,7 @@ Il contient les paramètres sensibles (mots de passe, identifiants, secrets) et 
 ### 🧪 Mode Démo
 
 - Une instance de démonstration est disponible :  
-  👉 [https://rempar-demo.mousqueton.io](https://rempar-demo.mousqueton.io)  
+  👉 [https://murail-demo.mousqueton.io](https://murail-demo.mousqueton.io)  
 - Dans ce mode :
   - Le mot de passe Observateur est prérempli automatiquement.
   - Permet de tester facilement l’interface sans configuration locale.
