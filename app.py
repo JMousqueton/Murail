@@ -37,6 +37,7 @@ ANIMATOR_PASSWORD  = os.environ.get("ANIMATOR_PASSWORD", "changeme_animator")
 OBSERVER_PASSWORD  = os.environ.get("OBSERVER_PASSWORD", "changeme_observer")
 APP_ID             = os.environ.get("APP_ID", "REMPAR-DEMO-LOCAL")
 TRACKING           = os.environ.get("TRACKING", "")
+DEBUG           = os.environ.get("DEBUG", "False")
 TZ = os.getenv("TZ", "Europe/Paris")
 APP_TZ = gettz(TZ)
 
@@ -819,4 +820,4 @@ if os.path.exists(DATA_PATH):
         app.logger.warning(f"Impossible de charger {DATA_PATH}: {e}")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=DEBUG)
