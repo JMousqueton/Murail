@@ -1,4 +1,4 @@
-# REMPAR
+# Mur@il
 Plateforme de simulation de crise inspirée de l’exercice massifié REMPAR25 de l’ANSSI
 
 # Simulation de crise – Exercice inspiré de REMPAR25
@@ -99,8 +99,8 @@ Une documentation complète en français expliquant le fonctionnement et la pré
 
 ### 2. Installation locale
 ```bash
-git clone https://github.com/jmousqueton/REMPAR.git
-cd REMPAR
+git clone https://github.com/jmousqueton/murail.git
+cd murail
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -112,7 +112,7 @@ Créer un fichier `.env` avec les variables nécessaires :
 ADMIN_PASSWORD=MonMotDePasseAdmin
 ANIMATOR_PASSWORD=MonMotDePasseAnimateur
 OBSERVER_PASSWORD=MonMotDePasseObservateur
-APP_ID=SIM-REMPAR25
+APP_ID=SIM-MURAIL
 FLASK_SECRET=ma-cle-ultra-secrete
 TZ=Europe/Paris
 ```
@@ -137,7 +137,7 @@ L’application est alors disponible sur [http://localhost:5000](http://localhos
 ## Démo en ligne
 
 Une instance de démonstration est disponible à l’adresse suivante :  
-👉 [https://rempar-demo.mousqueton.io](https://rempar-demo.mousqueton.io)
+👉 [https://murail-demo.mousqueton.io](https://murail-demo.mousqueton.io)
 
 En mode démo :
 
