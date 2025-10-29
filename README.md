@@ -1,3 +1,5 @@
+➡️ [Read this documentation in English](README-en.md)
+
 # Mur@il
 Plateforme de simulation de crise inspirée de l’exercice massifié REMPAR25 de l’ANSSI
 
@@ -152,7 +154,6 @@ En mode démo :
 ## 🚀 ToDo
 
 - [ ] Ajout d’un **mode clair/sombre** (préférence sauvegardée dans le navigateur)
-- [ ] Support **multilingue** (chargement des textes depuis un fichier de traduction)
 - [ ] Possibilité de publier ses propres tweet (limité à la fonction comm)
 - [ ] Générer un PDF à partir des remarques de l'**observateur**
 

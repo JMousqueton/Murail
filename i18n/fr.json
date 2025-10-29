@@ -1,0 +1,157 @@
+{
+  "html_lang": "fr",
+  "title": "Mur@il - Simulation d’exercice de crise",
+  "meta_description": "Mur@il: Simulation d’exercice de crise basée sur REMPAR25 de l’ANSSI. Un outil interactif pour simuler une gestion de crise cyber et communication.",
+  "meta_keywords": "cybersécurité, exercice de crise, simulation, REMPAR25, ANSSI, gestion de crise, cyberattaque, murail",
+  "og_title": "Simulation d’exercice de crise – REMPAR",
+  "og_description": "Mur@il: Un outil interactif basé sur REMPAR25 de l’ANSSI pour simuler et gérer une crise cyber.",
+  "tw_title": "Simulation d’exercice de crise – Mur@il",
+  "tw_description": "Testez la gestion de crise cyber avec cet outil basé sur REMPAR25.",
+
+  "h1_main": "Mur@il : Simulation d’exercice de crise",
+  "welcome_title": "Bienvenue",
+  "welcome_body": "Nous sommes heureux de vous accueillir pour cette nouvelle édition de notre simulation de gestion de crise",
+  "social_title": "Médias Sociaux",
+  "social_desc1": "Voir le fil type Twitter",
+  "auto_refresh": "Rafraichissement automatique toutes les 15 secondes",
+  "messaging_title": "Messagerie",
+  "messaging_desc": "Accéder aux messages par rôle",
+  "animateur": "Animateur",
+  "observateur": "Observateur",
+  "admin": "Administration",
+  "needs_password": "Nécessite un mot de passe",
+  "scenario_loaded": "Scénario",
+  "loaded": "chargé",
+  "empty": "vide",
+  "reset_session": "Réinitialiser la session",
+  "based_on": "basé sur l'exercice REMPAR25 de l'ANSSI",
+  "copyright": "© {year} {author}",
+  "lang_switch": "Langue",
+  "lang_fr": "Français",
+  "lang_en": "English",
+
+  "title_reset_confirm": "Confirmation – Réinitialiser",
+  "h_reset": "Réinitialisation de l’exercice",
+  "p_confirm": "Êtes-vous sûr de vouloir effacer toutes les traces de cet exercice ?",
+  "btn_yes": "Oui, tout effacer",
+  "btn_no": "Non, revenir",
+
+  "title_login": "Connexion",
+  "h_login": "Connexion",
+  "label_password": "Mot de passe",
+  "btn_login": "Se connecter",
+  "login_error": "Mot de passe incorrect",
+
+  "title_admin": "Simulation - Administration",
+  "brand_simulation": "Simulation",
+  "nav_home": "Accueil",
+  "nav_messaging": "Messagerie",
+  "nav_social": "Réseaux sociaux",
+  "nav_facilitator": "Animateur",
+  "badge_admin_mode": "Mode Administrateur",
+
+  "h_admin": "Administration",
+  "label_excel": "Fichier Excel",
+  "btn_excel_upload": "Charger",
+  "label_image": "Uploader une image (.png, .jpg, .jpeg, .gif)",
+  "btn_image_upload": "Uploader",
+
+  "planned_tweets": "Tweets planifiés",
+  "planned_messages": "Messages planifiés",
+
+  "h_timeline": "Timeline",
+
+   "title_facilitator": "Simulation - Animateur",
+  "badge_facilitator_mode": "Mode Animateur",
+  "scenario_loaded_badge": "Scénario chargé",
+  "scenario_empty_badge": "Scénario vide",
+
+  "h_timeline_msgs_only": "Timeline (messages uniquement)",
+  "aria_realtime_clock": "Horloge temps réel",
+
+  "stimulus_label": "Stimulus",
+  "expected_reaction": "Réaction attendue",
+  "comment_label": "Commentaire",
+
+  "no_past_messages": "Aucun message passé.",
+  "no_next_message": "Aucun prochain message.",
+  "no_more_scheduled": "Pas d’autre message planifié.",
+
+  "locale": "fr-FR",
+
+  "title_messaging": "Simulation – Messagerie",
+  "header_messaging": "Messagerie",
+  "choose_profile_to_start": "Choisissez un profil pour commencer",
+
+  "sound_toggle_title": "Activer/Désactiver le son",
+  "sound_label": "Son",
+  "on": "ON",
+  "off": "OFF",
+  "change_profile": "Changement de profil",
+
+  "login_as": "Se connecter en tant que…",
+  "label_profile": "Profil",
+  "placeholder_choose_role": "Choisir un rôle…",
+  "btn_enter": "Entrer",
+
+  "inbox_for_role": "Boîte de réception –",
+  "select_message_here": "Sélectionnez un message pour l’afficher ici.",
+  "waiting_messages": "En attente des messages…",
+
+  "stimulus_hash": "Stimulus",
+  "sender": "Émetteur",
+  "recipient": "Destinataire",
+  "delivery_time": "Horaire de distribution :",
+  "mark_processed": "Marquer comme traité",
+  "processed_badge": "✅ traité",
+
+  "exercise_banner": "EXERCICE - EXERCICE - EXERCICE",
+
+  "title_observer": "Simulation - Observateur",
+  "badge_observer": "Observateur",
+  "notes_hint": "Prenez des notes localement, en temps réel.",
+  "btn_export_json": "Export JSON",
+  "btn_export_csv": "Export CSV",
+  "btn_clear_notes": "Effacer notes",
+
+  "label_message": "Message :",
+  "vote_up_title": "👍 Conforme / bon",
+  "vote_down_title": "👎 À améliorer / non conforme",
+  "saved_status": "Enregistré",
+  "available_at_time": "Disponible à {time}",
+  "will_be_activated_at_time": "Ce stimulus sera activé à {time}.",
+
+  "confirm_clear_notes": "Effacer toutes les notes locales ?",
+  "alert_notes_cleared": "Notes supprimées localement.",
+
+  "csv_id": "id",
+  "csv_at_iso": "at_iso",
+  "csv_sender": "emetteur",
+  "csv_recipient": "destinataire",
+  "csv_stimulus": "stimuli",
+  "csv_vote": "vote",
+  "csv_comment": "comment",
+  "csv_saved_at": "saved_at",
+
+  "title_social": "Simulation – Réseaux sociaux",
+  "header_social": "Réseaux sociaux",
+  "mobile_trends_toggle": "Tendances",
+  "banner_exercise": "Exercice-Exercice-Exercice",
+
+  "filter_active_prefix": "Filtre actif : #",
+  "filter_clear_aria": "Retirer le filtre",
+
+  "idle_waiting_tweets": "En attente des prochains tweets…",
+
+  "trends_title": "Tendances",
+  "trends_realtime_hint": "Les hashtags se mettent à jour en temps réel.",
+  "trends_count_n": "{n} sujets",
+  "trends_count_none": "Aucun sujet",
+
+  "user_fallback_name": "Utilisateur",
+
+
+  "word_random": "aléatoire",
+  "word_random_plain": "aleatoire"
+
+}

@@ -16,11 +16,18 @@ from flask import (
     Flask, render_template, request, redirect, url_for, flash, send_file,
     session, make_response
 )
+
 from unidecode import unidecode
 import pandas as pd
 
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
+
+from pathlib import Path
+from functools import lru_cache
+from flask import g
+import json
+
 
 load_dotenv()
 
@@ -60,6 +67,71 @@ RAW_ROWS: List[Dict[str, Any]] = []
 
 # NEW: store parsed "decompte" windows
 DECOMPTE_EVENTS: List[Dict[str, Any]] = []  # {start: datetime, end: datetime, minutes: int}
+
+I18N_DIR = Path(__file__).parent / "i18n"
+SUPPORTED_LANGS = {"fr", "en"}
+DEFAULT_LANG = "fr"
+
+def detect_lang_from_header() -> str:
+    header = (request.headers.get("Accept-Language") or "").lower()
+    if header.startswith("en"):
+        return "en"
+    return DEFAULT_LANG
+
+def get_lang() -> str:
+    lang = session.get("language") or request.cookies.get("language")
+    if lang in SUPPORTED_LANGS:
+        return lang
+    return detect_lang_from_header()
+
+# --- File loading with mtime-aware cache (auto reloads when files change) ---
+@lru_cache(maxsize=None)
+def _read_translation(lang: str, mtime: float) -> dict:
+    path = I18N_DIR / f"{lang}.json"
+    with path.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+def load_translation(lang: str) -> dict:
+    lang = lang if lang in SUPPORTED_LANGS else DEFAULT_LANG
+    path = I18N_DIR / f"{lang}.json"
+    if not path.exists():
+        lang = DEFAULT_LANG
+    path = I18N_DIR / f"{lang}.json"
+    mtime = path.stat().st_mtime
+    return _read_translation(lang, mtime)
+
+@app.before_request
+def before_request():
+    g.lang = get_lang()
+    g.tdict = load_translation(g.lang)
+
+@app.context_processor
+def inject_translator():
+    def t(key: str, **kwargs):
+        text = g.tdict.get(key, key)
+        try:
+            return text.format(**kwargs) if kwargs else text
+        except Exception:
+            return text  # don't crash on bad placeholders
+    return {
+        "t": t,
+        "current_lang": lambda: g.lang,
+        "now_year": datetime.now().year
+    }
+
+@app.route("/set-lang/<lang>")
+def set_lang(lang):
+    if lang not in SUPPORTED_LANGS:
+        lang = DEFAULT_LANG
+    session.permanent = True
+    session["language"] = lang
+    resp = make_response(redirect(request.referrer or url_for("index")))
+    resp.set_cookie("language", lang, max_age=60*60*24*365, samesite="Lax")
+    return resp
+
+
+
+
 
 # Make TZ available in all templates
 @app.context_processor

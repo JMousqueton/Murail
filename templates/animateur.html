@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="fr" data-bs-theme="dark">
+<html lang="{{ t('html_lang') }}" data-bs-theme="dark">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Simulation- Animateur</title>
-<link rel="icon" type="image/svg+xml"
+    <title>{{ t('title_facilitator') }}</title>
+
+    <link rel="icon" type="image/svg+xml"
 href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 10 L20 70 H80 Z' fill='%235b5bd6' stroke='%23222' stroke-width='3'/><ellipse cx='50' cy='72' rx='32' ry='8' fill='%232f2fa2' stroke='%23222' stroke-width='3'/><circle cx='40' cy='40' r='2.5' fill='%23ffd84d'/><circle cx='56' cy='34' r='2' fill='%23ffd84d'/><circle cx='50' cy='50' r='2' fill='%23ffd84d'/></svg>">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -12,114 +13,125 @@ href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10
     <style>
       body { background:#0b0f14; color:#fff; }
       .small-muted { color:#9aa0a6; }
-
       .timeline .item{ border:1px solid rgba(255,255,255,.12); border-radius:.75rem; padding:.75rem 1rem; }
       .timeline .past { opacity:.7; }
       .timeline .next { border-color:#ffc107; box-shadow:0 0 0 .15rem rgba(255,193,7,.15); }
       .arrow { color:#ffc107; }
-
-      /* Flash visuel du “prochain” */
       .flash { animation: flashBorder 1200ms ease-out; }
-      @keyframes flashBorder {
-        0% { box-shadow: 0 0 0 .15rem rgba(255,193,7,.6); }
-        100% { box-shadow: 0 0 0 .15rem rgba(255,193,7,0); }
-      }
-
-      /* Boxes for content */
-      .box {
-        background: rgba(255,255,255,.04);
-        border: 1px solid rgba(255,255,255,.12);
-        border-radius: .75rem;
-        padding: .75rem 1rem;
-      }
-      .box-muted {
-        background: rgba(255,255,255,.02);
-        border: 1px solid rgba(255,255,255,.10);
-        border-radius: .75rem;
-        padding: .6rem .9rem;
-      }
-      .label-muted {
-        color:#9aa0a6;
-        font-size:.9rem;
-        margin-bottom:.35rem;
-      }
+      @keyframes flashBorder { 0% { box-shadow: 0 0 0 .15rem rgba(255,193,7,.6); } 100% { box-shadow: 0 0 0 .15rem rgba(255,193,7,0); } }
+      .box { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12); border-radius: .75rem; padding: .75rem 1rem; }
+      .box-muted { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.10); border-radius: .75rem; padding: .6rem .9rem; }
+      .label-muted { color:#9aa0a6; font-size:.9rem; margin-bottom:.35rem; }
       .prewrap { white-space: pre-wrap; }
     </style>
   </head>
   <body>
     <div class="container py-3">
-      <!-- En-tête avec badge et horloge -->
+
+      <!-- Header badges + clock -->
       <div class="d-flex align-items-center justify-content-between mb-3">
         <div class="d-flex align-items-center gap-2">
-          <span class="badge bg-warning text-dark">Mode Animateur</span>
+          <span class="badge bg-warning text-dark">{{ t('badge_facilitator_mode') }}</span>
           {% if n_tweets > 0 and n_messages > 0 %}
-            <span class="badge bg-success">Scénario chargé</span>
+            <span class="badge bg-success">{{ t('scenario_loaded_badge') }}</span>
           {% else %}
-            <span class="badge bg-danger">Scénario vide</span>
+            <span class="badge bg-danger">{{ t('scenario_empty_badge') }}</span>
           {% endif %}
         </div>
-        <div class="small-muted" id="rtclock" aria-label="Horloge temps réel"><i class="fas fa-clock me-1"></i><span id="clock-text"></span></div>
+
+        <!-- Language switcher -->
+        <div class="d-flex align-items-center gap-3">
+          <div class="small-muted" id="rtclock" aria-label="{{ t('aria_realtime_clock') }}">
+            <i class="fas fa-clock me-1"></i><span id="clock-text"></span>
+          </div>
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+              {{ t('lang_switch') }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+              <li><a class="dropdown-item" href="{{ url_for('set_lang', lang='fr') }}">{{ t('lang_fr') }}</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('set_lang', lang='en') }}">{{ t('lang_en') }}</a></li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       <div class="row g-3 mb-3">
-        <div class="col-sm-6"><div class="p-3 border rounded-3">Tweets planifiés : <strong>{{ n_tweets }}</strong></div></div>
-        <div class="col-sm-6"><div class="p-3 border rounded-3">Messages planifiés : <strong>{{ n_messages }}</strong></div></div>
+        <div class="col-sm-6">
+          <div class="p-3 border rounded-3">{{ t('planned_tweets') }} : <strong>{{ n_tweets }}</strong></div>
+        </div>
+        <div class="col-sm-6">
+          <div class="p-3 border rounded-3">{{ t('planned_messages') }} : <strong>{{ n_messages }}</strong></div>
+        </div>
       </div>
 
-      <h2 class="h6 mb-2">Timeline (messages uniquement)</h2>
+      <h2 class="h6 mb-2">{{ t('h_timeline_msgs_only') }}</h2>
       <div class="timeline d-flex flex-column gap-2 mb-4" id="timeline"></div>
     </div>
 
     <script>
-// --- Helpers d’icône de rôle (Font Awesome) ---
-function normNoAccent(s){
-  return String(s || '')
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu,'')
-    .toLowerCase();
-}
-function iconClassForRole(role){
-  const r = normNoAccent(role);
-  if (!r) return 'fa-user';
+      // --- Role icon helpers (handles FR + EN words) ---
+      function normNoAccent(s){
+        return String(s || '')
+          .normalize('NFD')
+          .replace(/\p{Diacritic}/gu,'')
+          .toLowerCase();
+      }
+      function iconClassForRole(role){
+        const r = normNoAccent(role);
+        if (!r) return 'fa-user';
 
-  if (r === 'tous' || r.includes('global')) return 'fa-globe';
-  if (r.includes('commun'))                 return 'fa-bullhorn';     // Communication
-  if (r.includes('decis'))                  return 'fa-user-tie';     // Décision
-  if (r.includes('inform') || r === 'it')   return 'fa-laptop-code';  // Informatique
-  if (r.includes('jurid') || r.includes('finan')) return 'fa-scale-balanced'; // Juridique / Finance
-  if (r.includes('ressources') || r === 'rh')     return 'fa-users';  // Ressources Humaines
-  if (r.includes('metier'))                 return 'fa-briefcase';    // Métier
+        // Global
+        if (r === 'tous' || r.includes('global') || r.includes('all')) return 'fa-globe';
 
-  return 'fa-user';
-}
-function roleWithIconHTML(role){
-  const cls = iconClassForRole(role);
-  return `<i class="fa-solid ${cls} me-1"></i>${escapeHtml(role || '')}`;
-}
-</script>
+        // Communication
+        if (r.includes('commun') || r.includes('comm') || r.includes('pr') || r.includes('comms')) return 'fa-bullhorn';
 
+        // Decision / Exec
+        if (r.includes('decis') || r.includes('exec') || r.includes('c-level') || r.includes('lead')) return 'fa-user-tie';
+
+        // IT / Info / SOC
+        if (r.includes('inform') || r === 'it' || r.includes('soc') || r.includes('infra')) return 'fa-laptop-code';
+
+        // Legal / Finance
+        if (r.includes('jurid') || r.includes('legal') || r.includes('finan') || r.includes('finance')) return 'fa-scale-balanced';
+
+        // HR
+        if (r.includes('ressources') || r === 'rh' || r.includes('human') || r.includes('hr')) return 'fa-users';
+
+        // Business / Métier
+        if (r.includes('metier') || r.includes('business') || r.includes('ops')) return 'fa-briefcase';
+
+        return 'fa-user';
+      }
+      function roleWithIconHTML(role){
+        const cls = iconClassForRole(role);
+        return `<i class="fa-solid ${cls} me-1"></i>${escapeHtml(role || '')}`;
+      }
+    </script>
 
     <script>
-      // ---------- Initial data from server (safe-JSON) ----------
+      // ---------- Initial data from server ----------
       const INITIAL_PAST5 = {{ past5 | tojson }};
       const INITIAL_NEXT1 = {{ next1 | tojson }};
       const INITIAL_NEXT2 = {{ next2 | tojson }};
       const META_BY_ID    = {{ meta_by_id | tojson }};
+      const LOCALE        = "{{ t('locale') }}";
+      const TZ            = "{{ TZ }}";
 
-      // ---------- Horloge temps réel ----------
-     function updateClock(){
-  const el = document.getElementById('clock-text');
-  if (!el) return;
-  const now = new Date();
-  // el.textContent = now.toLocaleString('fr-FR', { timeZone:'Europe/Paris' });
-  el.textContent = now.toLocaleString('fr-FR', { timeZone:'{{ TZ }}' });
-}
-setInterval(updateClock, 1000); updateClock();
+      // ---------- Real-time clock ----------
+      function updateClock(){
+        const el = document.getElementById('clock-text');
+        if (!el) return;
+        const now = new Date();
+        el.textContent = now.toLocaleString(LOCALE, { timeZone: TZ });
+      }
+      setInterval(updateClock, 1000); updateClock();
 
       // ---------- Utils ----------
       function hhmmFromMs(ms){
-        return new Date(ms).toLocaleTimeString('fr-FR', {
-          timeZone: '{{ TZ }}', hour:'2-digit', minute:'2-digit'
+        return new Date(ms).toLocaleTimeString(LOCALE, {
+          timeZone: TZ, hour:'2-digit', minute:'2-digit'
         });
       }
       function escapeHtml(s){
@@ -127,7 +139,7 @@ setInterval(updateClock, 1000); updateClock();
           .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       }
 
-      // Essaye d’extraire emetteur/destinataire depuis label “Message à {dest} (de {emet})”
+      // Extract sender/recipient if label looks like: "Message à {dest} (de {emet})"
       function parseFromLabel(label){
         const out = { emetteur:"", destinataire:"" };
         if (!label) return out;
@@ -136,19 +148,16 @@ setInterval(updateClock, 1000); updateClock();
         return out;
       }
 
-      // Normalise n’importe quel shape venant serveur/SSE
       function normalizeEvent(e){
         if (!e) return null;
         const id = e.msg_id || e.id;
 
-        // priorité à at_ms ; sinon at (ISO)
         let ms = Number.isFinite(e.at_ms) ? e.at_ms : NaN;
         if (!Number.isFinite(ms) && e.at) {
           const d = new Date(e.at);
           if (!isNaN(d)) ms = d.getTime();
         }
 
-        // sources possibles pour emetteur/destinataire/stimuli
         let emetteur = e.emetteur || "";
         let destinataire = e.destinataire || "";
         if (!emetteur || !destinataire) {
@@ -156,7 +165,7 @@ setInterval(updateClock, 1000); updateClock();
           emetteur = emetteur || parsed.emetteur;
           destinataire = destinataire || parsed.destinataire;
         }
-        const stimuli = e.stimuli || ""; // si pas envoyé côté backend, on affichera rien
+        const stimuli = e.stimuli || "";
 
         const meta = META_BY_ID[id] || { reaction: e.reaction || "", commentaire: e.commentaire || "" };
 
@@ -168,11 +177,10 @@ setInterval(updateClock, 1000); updateClock();
           stimuli,
           label: e.label || "",
           reaction: meta.reaction || "",
-          commentaire: meta.commentaire || "",
+          commentaire: meta.commentaire || ""
         };
       }
 
-      // Mémoire des événements
       const events = [];
       function upsertEvent(ev){
         if (!ev || !ev.id) return;
@@ -181,19 +189,14 @@ setInterval(updateClock, 1000); updateClock();
         else events.push(ev);
       }
 
-      // Seed initial
       for (const e of (INITIAL_PAST5 || [])) { const n = normalizeEvent(e); if (n) upsertEvent(n); }
       if (INITIAL_NEXT1) { const n = normalizeEvent(INITIAL_NEXT1); if (n) upsertEvent(n); }
       if (INITIAL_NEXT2) { const n = normalizeEvent(INITIAL_NEXT2); if (n) upsertEvent(n); }
 
-      // ---------- Rendu ----------
-      const timeline = document.getElementById('timeline');
-      let lastNext1Id = null;
-
       async function fetchUpcomingIfNeeded(){
         const now = Date.now();
         const future = events.filter(e => Number.isFinite(e.at_ms) && e.at_ms >= now);
-        if (future.length >= 2) return; // on a déjà next1 + next2
+        if (future.length >= 2) return;
         try {
           const res = await fetch(`{{ url_for('animateur_upcoming') }}?limit=3`, { cache:'no-store' });
           if (!res.ok) return;
@@ -208,18 +211,17 @@ setInterval(updateClock, 1000); updateClock();
       }
 
       function headerLine(e){
-        // Ligne entête : [badge Stimulus #id]  emetteur → destinataire    (heure à droite)
         return `
           <div class="d-flex justify-content-between align-items-baseline">
             <div>
-              <span class="badge bg-warning text-dark">Stimulus #${escapeHtml(e.id)}</span>
+              <span class="badge bg-warning text-dark">{{ t('stimulus_label') }} #${escapeHtml(e.id)}</span>
               <strong class="ms-2">${escapeHtml(e.emetteur || '')} → ${roleWithIconHTML(e.destinataire||'')}</strong>
             </div>
             <div>
-        <span class="badge bg-primary">
-          <i class="fas fa-clock me-1"></i>${hhmmFromMs(e.at_ms)}
-        </span>
-      </div>
+              <span class="badge bg-primary">
+                <i class="fas fa-clock me-1"></i>${hhmmFromMs(e.at_ms)}
+              </span>
+            </div>
           </div>
         `;
       }
@@ -228,40 +230,42 @@ setInterval(updateClock, 1000); updateClock();
         if (!e.stimuli) return '';
         return `
           <div class="box mt-3">
-            <div class="label-muted"><i class="fas fa-bolt text-warning me-1"></i> Stimulus</div>
+            <div class="label-muted"><i class="fas fa-bolt text-warning me-1"></i> {{ t('stimulus_label') }}</div>
             <div class="prewrap">${escapeHtml(e.stimuli)}</div>
           </div>
         `;
       }
 
       function metaLines(e){
-  const boxes = [];
-  if (e.reaction) {
-    boxes.push(`
-      <div class="col">
-        <div class="box-muted h-100">
-          <div class="label-muted"><i class="fas fa-search text-info me-1"></i> Réaction attendue</div>
-          <div class="prewrap">${escapeHtml(e.reaction)}</div>
-        </div>
-      </div>`);
-  }
-  if (e.commentaire) {
-    boxes.push(`
-      <div class="col">
-        <div class="box-muted h-100">
-          <div class="label-muted"><i class="fas fa-comment-dots text-success me-1"></i> Commentaire</div>
-          <div class="prewrap">${escapeHtml(e.commentaire)}</div>
-        </div>
-      </div>`);
-  }
-  if (!boxes.length) return '';
-  return `<div class="row mt-2 g-2">${boxes.join('')}</div>`;
-}
-
+        const boxes = [];
+        if (e.reaction) {
+          boxes.push(`
+            <div class="col">
+              <div class="box-muted h-100">
+                <div class="label-muted"><i class="fas fa-search text-info me-1"></i> {{ t('expected_reaction') }}</div>
+                <div class="prewrap">${escapeHtml(e.reaction)}</div>
+              </div>
+            </div>`);
+        }
+        if (e.commentaire) {
+          boxes.push(`
+            <div class="col">
+              <div class="box-muted h-100">
+                <div class="label-muted"><i class="fas fa-comment-dots text-success me-1"></i> {{ t('comment_label') }}</div>
+                <div class="prewrap">${escapeHtml(e.commentaire)}</div>
+              </div>
+            </div>`);
+        }
+        if (!boxes.length) return '';
+        return `<div class="row mt-2 g-2">${boxes.join('')}</div>`;
+      }
 
       function card(html, extraClass=""){
         return `<div class="item ${extraClass}">${html}</div>`;
       }
+
+      const timeline = document.getElementById('timeline');
+      let lastNext1Id = null;
 
       function render(){
         const valid = events.filter(e => Number.isFinite(e.at_ms));
@@ -271,62 +275,45 @@ setInterval(updateClock, 1000); updateClock();
         const past   = valid.filter(e => e.at_ms <  now);
         const future = valid.filter(e => e.at_ms >= now);
 
-        const pastN = past.slice(-2);     // 3 précédents
+        const pastN = past.slice(-2);
         const next1 = future[0] || null;
         const next2 = future[1] || null;
 
         const blocks = [];
 
-        // passés (3)
         if (pastN.length) {
           for (const e of pastN) {
-            blocks.push(card(`
-              ${headerLine(e)}
-              ${stimulusBox(e)}
-              ${metaLines(e)}
-            `, "past"));
+            blocks.push(card(`${headerLine(e)}${stimulusBox(e)}${metaLines(e)}`, "past"));
           }
         } else {
-          blocks.push(`<div class="text-secondary">Aucun message passé.</div>`);
+          blocks.push(`<div class="text-secondary">{{ t('no_past_messages') }}</div>`);
         }
 
-        // prochain
         if (next1) {
           const needFlash = (lastNext1Id && next1.id !== lastNext1Id);
-          blocks.push(card(`
-            ${headerLine(next1)}
-            ${stimulusBox(next1)}
-            ${metaLines(next1)}
-          `, "next" + (needFlash ? " flash" : "")));
+          blocks.push(card(`${headerLine(next1)}${stimulusBox(next1)}${metaLines(next1)}`, "next" + (needFlash ? " flash" : "")));
           lastNext1Id = next1.id;
         } else {
-          blocks.push(`<div class="text-secondary">Aucun prochain message.</div>`);
+          blocks.push(`<div class="text-secondary">{{ t('no_next_message') }}</div>`);
           lastNext1Id = null;
         }
 
-        // suivant après prochain
         if (next2) {
-          blocks.push(card(`
-            ${headerLine(next2)}
-            ${stimulusBox(next2)}
-            ${metaLines(next2)}
-          `));
+          blocks.push(card(`${headerLine(next2)}${stimulusBox(next2)}${metaLines(next2)}`));
         } else if (next1) {
-          // essayer de précharger si on a un next1 mais pas de next2
           fetchUpcomingIfNeeded();
         } else {
-          blocks.push(`<div class="text-secondary">Pas d’autre message planifié.</div>`);
+          blocks.push(`<div class="text-secondary">{{ t('no_more_scheduled') }}</div>`);
         }
 
         timeline.innerHTML = blocks.join('\n');
       }
 
-      // rendu initial + rafraîchissements
       render();
-      setInterval(render, 10_000);
-      setInterval(fetchUpcomingIfNeeded, 15_000);
+      setInterval(render, 10000);
+      setInterval(fetchUpcomingIfNeeded, 15000);
 
-      // ---------- SSE : alimente la timeline en temps réel ----------
+      // ---------- SSE ----------
       const evt = new EventSource("{{ url_for('stream_animateur') }}");
       evt.addEventListener('animateur', (e) => {
         try {
@@ -341,13 +328,14 @@ setInterval(updateClock, 1000); updateClock();
         } catch {}
       });
       evt.addEventListener('ping', () => {});
-      evt.onerror = () => { /* auto-reconnect */ };
+      evt.onerror = () => {};
     </script>
 
     <footer class="text-center mt-5 p-3 bg-dark text-light">
-      <p>© 2025 <a href="https://github.com/JMousqueton/REMPAR" target="_blank">Julien Mousqueton</a></p>
-      <p>basé sur l'exercice REMPAR25 de l'ANSSI</p>
+      <p>{{ t('copyright', year=now_year, author='Julien Mousqueton') }}</p>
+      <p>{{ t('based_on') }}</p>
     </footer>
     {{ TRACKING | safe }}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
   </body>
 </html>

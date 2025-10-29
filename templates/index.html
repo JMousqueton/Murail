@@ -1,160 +1,142 @@
 <!doctype html>
-<html lang="fr" data-bs-theme="dark">
+<html lang="{{ t('html_lang') }}" data-bs-theme="dark">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,
       <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
         <rect width='100' height='100' fill='white'/>
         <text x='50%' y='60%' font-size='60' text-anchor='middle' fill='blue' font-family='Arial'>R</text>
       </svg>">
-  <!-- SEO essentials -->
-  <title>Mur@il - Simulation d’exercice de crise</title>
-  <meta name="description" content="Mur@il: Simulation d’exercice de crise basée sur REMPAR25 de l’ANSSI. Un outil interactif pour simuler une gestion de crise cyber et communication.">
-  <meta name="keywords" content="cybersécurité, exercice de crise, simulation, REMPAR25, ANSSI, gestion de crise, cyberattaque, murail">
-  <meta name="author" content="Julien Mousqueton">
 
-  <!-- Open Graph (social sharing) -->
-  <meta property="og:title" content="Simulation d’exercice de crise – REMPAR">
-  <meta property="og:description" content="Mur@il: Un outil interactif basé sur REMPAR25 de l’ANSSI pour simuler et gérer une crise cyber.">
-  <meta property="og:image" content="https://repository-images.githubusercontent.com/1060141312/77b15d19-1ffb-4c9b-8119-8bb4f0373c79">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://murail-demo.mousqueton.io">
+    <title>{{ t('title') }}</title>
+    <meta name="description" content="{{ t('meta_description') }}">
+    <meta name="keywords" content="{{ t('meta_keywords') }}">
+    <meta name="author" content="Julien Mousqueton">
 
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Simulation d’exercice de crise – Mur@il">
-  <meta name="twitter:description" content="Testez la gestion de crise cyber avec cet outil basé sur REMPAR25.">
-  <meta name="twitter:image" content="https://repository-images.githubusercontent.com/1060141312/77b15d19-1ffb-4c9b-8119-8bb4f0373c79">
+    <meta property="og:title" content="{{ t('og_title') }}">
+    <meta property="og:description" content="{{ t('og_description') }}">
+    <meta property="og:image" content="https://repository-images.githubusercontent.com/1060141312/77b15d19-1ffb-4c9b-8119-8bb4f0373c79">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://murail-demo.mousqueton.io">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ t('tw_title') }}">
+    <meta name="twitter:description" content="{{ t('tw_description') }}">
+    <meta name="twitter:image" content="https://repository-images.githubusercontent.com/1060141312/77b15d19-1ffb-4c9b-8119-8bb4f0373c79">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
     <style>
       body { background: #0b0f14; }
       .timeline .item{ border:1px solid rgba(255,255,255,.12); border-radius:.75rem; padding:.75rem 1rem; }
       .timeline .past { opacity:.55; }
-      .hover-shadow {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.hover-shadow:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 0.5rem 1rem rgba(0,0,0,.5);
-}
+      .hover-shadow { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+      .hover-shadow:hover { transform: translateY(-4px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,.5); }
     </style>
   </head>
   <body class="text-light">
     <div class="container py-4">
-      <h1 class="h2 mb-5" style="margin-bottom:3.5rem;">
-  <i class="fa-solid fa-chess"></i> Mur@il : Simulation d’exercice de crise
-</h1>
-
-<!-- Box arrondie -->
-<div class="card bg-dark border border-secondary rounded-4 shadow-sm my-4">
-  <div class="card-body text-center">
-    <h2 class="h3 text-info mb-2"></i> Bienvenue</h2>
-    <p class="text-secondary mb-0">
-      Nous sommes heureux de vous accueillir pour cette nouvelle édition de notre simulation de gestion de crise
-    </p>
-  </div>
-</div>
-
-<div class="row g-4">
-  <div class="col-12 col-md-6">
-  <a href="{{ url_for('socialmedia') }}" target="_blank" class="text-decoration-none">
-    <div class="card bg-dark border border-secondary h-100 shadow-sm hover-shadow">
-      <div class="card-body text-center">
-        <h2 class="h5 text-info"><i class="fa-brands fa-twitter"></i> Médias Sociaux</h2>
-        <p class="small text-secondary">Voir le fil type Twitter</p>
-        <p class="small text-secondary">Rafraichissement automatique toutes les 15 secondes</p>
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0"><i class="fa-solid fa-chess"></i> {{ t('h1_main') }}</h1>
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+            {{ t('lang_switch') }}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+            <li><a class="dropdown-item" href="{{ url_for('set_lang', lang='fr') }}">{{ t('lang_fr') }}</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('set_lang', lang='en') }}">{{ t('lang_en') }}</a></li>
+          </ul>
+        </div>
       </div>
-    </div>
-  </a>
-</div>
 
-  <div class="col-12 col-md-6">
-  <a href="{{ url_for('messagerie') }}" target="_blank" class="text-decoration-none">
-    <div class="card bg-dark border border-secondary h-100 shadow-sm hover-shadow">
-      <div class="card-body text-center">
-        <h2 class="h5 text-info"><i class="fa-solid fa-envelope-circle-check"></i> Messagerie</h2>
-        <p class="small text-secondary">Accéder aux messages par rôle</p>
-        <p class="small text-secondary">Rafraichissement automatique toutes les 15 secondes</p>
+      <div class="card bg-dark border border-secondary rounded-4 shadow-sm my-4">
+        <div class="card-body text-center">
+          <h2 class="h3 text-info mb-2">{{ t('welcome_title') }}</h2>
+          <p class="text-secondary mb-0">{{ t('welcome_body') }}</p>
+        </div>
       </div>
-    </div>
-  </a>
-</div>
-<div><hr></div>
-<div class="col-12 col-md-6">
-  <a href="{{ url_for('animateur') }}" target="_blank" class="text-decoration-none">
-    <div class="card bg-dark border border-secondary h-100 shadow-sm hover-shadow">
-      <div class="card-body text-center">
-        <h2 class="h5 text-info"><i class="fa-solid fa-hat-wizard"></i> Animateur</h2>
-        <p class="small text-secondary"><i class="fa-solid fa-lock"></i> Nécessite un mot de passe</p>
+
+      <div class="row g-4">
+        <div class="col-12 col-md-6">
+          <a href="{{ url_for('socialmedia') }}" target="_blank" class="text-decoration-none">
+            <div class="card bg-dark border border-secondary h-100 shadow-sm hover-shadow">
+              <div class="card-body text-center">
+                <h2 class="h5 text-info"><i class="fa-brands fa-twitter"></i> {{ t('social_title') }}</h2>
+                <p class="small text-secondary">{{ t('social_desc1') }}</p>
+                <p class="small text-secondary">{{ t('auto_refresh') }}</p>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <a href="{{ url_for('messagerie') }}" target="_blank" class="text-decoration-none">
+            <div class="card bg-dark border border-secondary h-100 shadow-sm hover-shadow">
+              <div class="card-body text-center">
+                <h2 class="h5 text-info"><i class="fa-solid fa-envelope-circle-check"></i> {{ t('messaging_title') }}</h2>
+                <p class="small text-secondary">{{ t('messaging_desc') }}</p>
+                <p class="small text-secondary">{{ t('auto_refresh') }}</p>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div><hr></div>
+
+        <div class="col-12 col-md-6">
+          <a href="{{ url_for('animateur') }}" target="_blank" class="text-decoration-none">
+            <div class="card bg-dark border border-secondary h-100 shadow-sm hover-shadow">
+              <div class="card-body text-center">
+                <h2 class="h5 text-info"><i class="fa-solid fa-hat-wizard"></i> {{ t('animateur') }}</h2>
+                <p class="small text-secondary"><i class="fa-solid fa-lock"></i> {{ t('needs_password') }}</p>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <a href="{{ url_for('observateur') }}" target="_blank" class="text-decoration-none">
+            <div class="card bg-dark border border-secondary h-100 shadow-sm hover-shadow">
+              <div class="card-body text-center">
+                <h2 class="h5 text-info"><i class="fa-solid fa-tower-observation"></i> {{ t('observateur') }}</h2>
+                <p class="small text-secondary"><i class="fa-solid fa-lock"></i> {{ t('needs_password') }}</p>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <a href="{{ url_for('admin') }}" target="_blank" class="text-decoration-none">
+            <div class="card bg-dark border border-secondary h-100 shadow-sm hover-shadow">
+              <div class="card-body text-center">
+                <h2 class="h5 text-info"><i class="fa-solid fa-screwdriver-wrench"></i> {{ t('admin') }}</h2>
+                <p class="small text-secondary"><i class="fa-solid fa-lock"></i> {{ t('needs_password') }}</p>
+                {% if n_tweets > 0 and n_messages > 0 %}
+                  <p class="mt-2">{{ t('scenario_loaded') }} <span class="badge bg-success">{{ t('loaded') }}</span></p>
+                {% else %}
+                  <p class="mt-2">{{ t('scenario_loaded') }} <span class="badge bg-danger">{{ t('empty') }}</span></p>
+                {% endif %}
+              </div>
+            </div>
+          </a>
+        </div>
       </div>
+
+      <footer class="text-center mt-5 p-3 bg-dark text-light">
+        <p>{{ t('copyright', year=now_year, author='Julien Mousqueton') }}</p>
+        <p>{{ t('based_on') }}</p>
+        <p class="small">
+          <i class="fa-solid fa-recycle text-danger"></i>
+          <a href="{{ url_for('reset') }}" class="link-danger text-decoration-none">
+            {{ t('reset_session') }}
+          </a>
+        </p>
+      </footer>
     </div>
-  </a>
-</div>
 
-<div class="col-12 col-md-6">
-  <a href="{{ url_for('observateur') }}" target="_blank" class="text-decoration-none">
-    <div class="card bg-dark border border-secondary h-100 shadow-sm hover-shadow">
-      <div class="card-body text-center">
-        <h2 class="h5 text-info"><i class="fa-solid fa-tower-observation"></i> Observateur</h2>
-        <p class="small text-secondary"><i class="fa-solid fa-lock"></i> Nécessite un mot de passe</p>
-      </div>
-    </div>
-  </a>
-</div>
-
-<div class="col-12 col-md-6">
-  <a href="{{ url_for('admin') }}" target="_blank" class="text-decoration-none">
-    <div class="card bg-dark border border-secondary h-100 shadow-sm hover-shadow">
-      <div class="card-body text-center">
-        <h2 class="h5 text-info"><i class="fa-solid fa-screwdriver-wrench"></i> Administration</h2>
-        <p class="small text-secondary"><i class="fa-solid fa-lock"></i> Nécessite un mot de passe</p>
-        {% if n_tweets > 0 and n_messages > 0 %}
-          <p class="mt-2">Scénario <span class="badge bg-success">chargé</span></p>
-        {% else %}
-          <p class="mt-2">Scénario <span class="badge bg-danger">vide</span></p>
-        {% endif %}
-      </div>
-    </div>
-  </a>
-</div>
-
-
-
-
-
-       
-
-<!--
-      <hr class="my-4">
-
-      <h2 class="h6 mb-2">5 derniers stimulus</h2>
-      <div class="timeline d-flex flex-column gap-2">
-        {% if past5 %}
-          {% for e in past5 %}
-          <div class="item past">
-            <span class="badge bg-secondary">{{ e.id }}</span>
-            <strong>{{ e.label }}</strong>
-            <div class="small text-muted">{{ e.at.strftime("%H:%M:%S") }}</div>
-          </div>
-          {% endfor %}
-        {% else %}
-          <div class="text-secondary">Aucun événement passé.</div>
-        {% endif %}
-      </div>
-    </div>
---> 
-    <footer class="text-center mt-5 p-3 bg-dark text-light">
-    <p>© 2025 <a href="https://github.com/JMousqueton/murail" target="_blank">Julien Mousqueton</a></p>
-    <p>basé sur l'exercice REMPAR25 de l'ANSSI</p>
-    <p class="small"><i class="fa-solid fa-recycle text-danger"></i>
-    <a href="{{ url_for('reset') }}" class="link-danger text-decoration-none">
-      Réinitialiser la session
-    </a>
-  </p>
-  </footer>
-  {{ TRACKING | safe }}
+    {{ TRACKING | safe }}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
   </body>
 </html>

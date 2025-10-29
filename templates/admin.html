@@ -1,9 +1,10 @@
 <!doctype html>
-<html lang="fr" data-bs-theme="dark">
+<html lang="{{ t('html_lang') }}" data-bs-theme="dark">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Simulation - Administration</title>
+    <title>{{ t('title_admin') }}</title>
+
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
   <polygon points='30,5 70,5 95,30 95,70 70,95 30,95 5,70 5,30' fill='red' stroke='black' stroke-width='3'/>
@@ -22,101 +23,114 @@
   </head>
   <body class="text-light">
 
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-  <div class="container-fluid">
-    <a class="navbar-brand fw-bold" href="{{ url_for('index') }}" target="_blank">Simulation</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Menu">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('index') }}" target="_blank">Accueil</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('messagerie') }}" target="_blank">Messagerie</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('socialmedia') }}" target="_blank">Réseaux sociaux</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('animateur') }}" target="_blank">Animateur</a>
-        </li>
-      </ul>
-      <span class="badge bg-danger">Mode Administrateur</span>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold" href="{{ url_for('index') }}" target="_blank">{{ t('brand_simulation') }}</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Menu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('index') }}" target="_blank">{{ t('nav_home') }}</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('messagerie') }}" target="_blank">{{ t('nav_messaging') }}</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('socialmedia') }}" target="_blank">{{ t('nav_social') }}</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('animateur') }}" target="_blank">{{ t('nav_facilitator') }}</a>
+          </li>
+        </ul>
+
+        <!-- Language switcher -->
+        <div class="dropdown me-3">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+            {{ t('lang_switch') }}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+            <li><a class="dropdown-item" href="{{ url_for('set_lang', lang='fr') }}">{{ t('lang_fr') }}</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('set_lang', lang='en') }}">{{ t('lang_en') }}</a></li>
+          </ul>
+        </div>
+
+        <span class="badge bg-danger">{{ t('badge_admin_mode') }}</span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container py-3">
+    <h1 class="h4 mb-3">{{ t('h_admin') }}</h1>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <div class="alert alert-warning">{{ messages[0] }}</div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Upload Excel -->
+    <form action="{{ url_for('admin') }}" method="post" enctype="multipart/form-data" class="mb-4">
+      <label class="form-label">{{ t('label_excel') }}</label>
+      <input type="file" name="file" class="form-control mb-2" accept=".xlsx,.xls" required>
+      <button class="btn btn-primary">{{ t('btn_excel_upload') }}</button>
+    </form>
+
+    <!-- Upload Images -->
+    <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data" class="mb-4">
+      <label class="form-label">{{ t('label_image') }}</label>
+      <input type="file" name="image" class="form-control mb-2" accept=".png,.jpg,.jpeg,.gif" required>
+      <button class="btn btn-success">{{ t('btn_image_upload') }}</button>
+    </form>
+
+    <div class="row g-3 mb-4">
+      <div class="col-sm-6">
+        <div class="p-3 border rounded-3">{{ t('planned_tweets') }} : <strong>{{ n_tweets }}</strong></div>
+      </div>
+      <div class="col-sm-6">
+        <div class="p-3 border rounded-3">{{ t('planned_messages') }} : <strong>{{ n_messages }}</strong></div>
+      </div>
+    </div>
+
+    <h2 class="h6 mb-2">{{ t('h_timeline') }}</h2>
+    <div class="timeline d-flex flex-column gap-2">
+      {% if past5 %}
+        {% for e in past5 %}
+        <div class="item past">
+          <span class="badge bg-secondary">{{ e.type }}</span>
+          <strong>{{ e.label }}</strong>
+          <div class="small text-muted">{{ e.at.strftime("%H:%M:%S") }}</div>
+        </div>
+        {% endfor %}
+      {% endif %}
+
+      {% if next1 %}
+        <div class="item next">
+          <span class="arrow me-2">➜</span>
+          <span class="badge bg-info text-dark">{{ next1.type }}</span>
+          <strong>{{ next1.label }}</strong>
+          <div class="small text-muted">{{ next1.at.strftime("%H:%M:%S") }}</div>
+        </div>
+      {% endif %}
+
+      {% if next2 %}
+        <div class="item">
+          <span class="badge bg-info-subtle border text-light">{{ next2.type }}</span>
+          <strong>{{ next2.label }}</strong>
+          <div class="small text-muted">{{ next2.at.strftime("%H:%M:%S") }}</div>
+        </div>
+      {% endif %}
     </div>
   </div>
-</nav>
 
-
-    <div class="container py-3">
-      <h1 class="h4 mb-3">Administration</h1>
-
-      {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <div class="alert alert-warning">{{ messages[0] }}</div>
-      {% endif %}
-      {% endwith %}
-
-      <!-- Upload Excel -->
-      <form action="{{ url_for('admin') }}" method="post" enctype="multipart/form-data" class="mb-4">
-        <label class="form-label">Fichier Excel</label>
-        <input type="file" name="file" class="form-control mb-2" accept=".xlsx,.xls" required>
-        <button class="btn btn-primary">Charger</button>
-      </form>
-
-      <!-- Upload Images -->
-      <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data" class="mb-4">
-        <label class="form-label">Uploader une image (.png, .jpg, .jpeg, .gif)</label>
-        <input type="file" name="image" class="form-control mb-2" accept=".png,.jpg,.jpeg,.gif" required>
-        <button class="btn btn-success">Uploader</button>
-      </form>
-
-      <div class="row g-3 mb-4">
-        <div class="col-sm-6">
-          <div class="p-3 border rounded-3">Tweets planifiés : <strong>{{ n_tweets }}</strong></div>
-        </div>
-        <div class="col-sm-6">
-          <div class="p-3 border rounded-3">Messages planifiés : <strong>{{ n_messages }}</strong></div>
-        </div>
-      </div>
-
-      <h2 class="h6 mb-2">Timeline</h2>
-      <div class="timeline d-flex flex-column gap-2">
-        {% if past5 %}
-          {% for e in past5 %}
-          <div class="item past">
-            <span class="badge bg-secondary">{{ e.type }}</span>
-            <strong>{{ e.label }}</strong>
-            <div class="small text-muted">{{ e.at.strftime("%H:%M:%S") }}</div>
-          </div>
-          {% endfor %}
-        {% endif %}
-
-        {% if next1 %}
-          <div class="item next">
-            <span class="arrow me-2">➜</span>
-            <span class="badge bg-info text-dark">{{ next1.type }}</span>
-            <strong>{{ next1.label }}</strong>
-            <div class="small text-muted">{{ next1.at.strftime("%H:%M:%S") }}</div>
-          </div>
-        {% endif %}
-
-        {% if next2 %}
-          <div class="item">
-            <span class="badge bg-info-subtle border text-light">{{ next2.type }}</span>
-            <strong>{{ next2.label }}</strong>
-            <div class="small text-muted">{{ next2.at.strftime("%H:%M:%S") }}</div>
-          </div>
-        {% endif %}
-      </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <footer class="text-center mt-5 p-3 bg-dark text-light">
-    <p>© 2025 <a href="https://github.com/JMousqueton/REMPAR" target="_blank">Julien Mousqueton</a></p>
-    <p>basé sur l'exercice REMPAR25 de l'ANSSI</p>
+  <footer class="text-center mt-5 p-3 bg-dark text-light">
+    <p>{{ t('copyright', year=now_year, author='Julien Mousqueton') }}</p>
+    <p>{{ t('based_on') }}</p>
   </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
   </body>
 </html>

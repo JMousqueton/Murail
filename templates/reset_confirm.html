@@ -1,28 +1,45 @@
 <!doctype html>
-<html lang="fr" data-bs-theme="dark">
+<html lang="{{ t('html_lang') }}" data-bs-theme="dark">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Confirmation – Réinitialiser</title>
+    <title>{{ t('title_reset_confirm') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   </head>
   <body class="bg-dark text-light">
     <div class="container py-5 text-center">
-      <h1 class="h4 mb-4">Réinitialisation de l’exercice</h1>
-      <p class="lead">Êtes-vous sûr de vouloir effacer toutes les traces de cet exercice&nbsp;?</p>
+
+      <!-- Optional: same language switcher for consistency -->
+      <div class="d-flex justify-content-end mb-3">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+            {{ t('lang_switch') }}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+            <li><a class="dropdown-item" href="{{ url_for('set_lang', lang='fr') }}">{{ t('lang_fr') }}</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('set_lang', lang='en') }}">{{ t('lang_en') }}</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <h1 class="h4 mb-4">{{ t('h_reset') }}</h1>
+      <p class="lead">{{ t('p_confirm') }}</p>
 
       <form method="post" class="d-flex justify-content-center gap-3 mt-4">
         <button type="submit" name="action" value="yes" class="btn btn-danger">
-          Oui, tout effacer
+          {{ t('btn_yes') }}
         </button>
         <button type="submit" name="action" value="no" class="btn btn-secondary">
-          Non, revenir
+          {{ t('btn_no') }}
         </button>
       </form>
     </div>
+
     <footer class="text-center mt-5 p-3 bg-dark text-light">
-    <p>© 2025 <a href="https://github.com/JMousqueton/REMPAR" target="_blank">Julien Mousqueton</a></p>
-    <p>basé sur l'exercice REMPAR25 de l'ANSSI</p>
-  </footer>
+      <p>{{ t('copyright', year=now_year, author='Julien Mousqueton') }}</p>
+      <p>{{ t('based_on') }}</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
   </body>
 </html>

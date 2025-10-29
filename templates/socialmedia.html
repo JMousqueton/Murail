@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Simulation – Réseaux sociaux</title>
+    <title>{{ t('title_social') }}</title>
 
     <!-- Favicon SVG (oiseau bleu) -->
     <link rel="icon" type="image/svg+xml"
@@ -87,10 +87,10 @@
     <div class="tw-header">
       <div class="container-fluid">
         <div class="d-flex align-items-center justify-content-between px-3 py-2">
-          <h1 class="h4 m-0"><a href="/"><i class="fa-solid fa-house text-white"></i></a> Réseaux sociaux</h1>
+          <h1 class="h4 m-0"><a href="/"><i class="fa-solid fa-house text-white"></i></a> {{ t('header_social') }}</h1>
           <div class="d-flex align-items-center gap-2">
             <button class="btn btn-sm btn-outline-light mobile-trends-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#trendsCollapse" aria-expanded="false" aria-controls="trendsCollapse">
-              <i class="bi bi-hash"></i> Tendances
+              <i class="bi bi-hash"></i> {{ t('mobile_trends_toggle') }}
             </button>
             <div class="small-muted" id="clock"></div>
           </div>
@@ -124,11 +124,11 @@
             <div class="right-rail pt-3">
               <div class="right-card p-3 mb-3">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                  <h2 class="h6 m-0"><i class="bi bi-hash me-2"></i>Tendances</h2>
+                  <h2 class="h6 m-0"><i class="bi bi-hash me-2"></i>{{ t('mobile_trends_toggle') }}</h2>
                   <span class="small-muted" id="trend-count"></span>
                 </div>
                 <div id="trends"></div>
-                <div class="small-muted mt-2">Les hashtags se mettent à jour en temps réel.</div>
+                <div class="small-muted mt-2">{{ t('trends_realtime_hint') }}</div>
               </div>
             </div>
           </div>
