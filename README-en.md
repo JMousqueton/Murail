@@ -87,7 +87,7 @@ The Excel file must contain at least the following columns:
 ## 📖 Documentation
 
 A complete documentation in French explaining how to configure and prepare the Excel scenario file is available here:  
-➡️ [Documentation/Documentation-fr.md](Documentation/Documentation-fr.md)
+➡️ [Documentation/Documentation-fr.md](Documentation/Documentation-en.md)
 
 ---
 
