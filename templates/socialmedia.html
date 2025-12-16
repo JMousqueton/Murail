@@ -433,6 +433,7 @@
         for(const id of [...timers.keys()]) stopTimer(id);
         feed.innerHTML = '';
       }
+      /*
       function renderFromState(){
         if(!stateTweets.length){
           if(idle) idle.style.display = '';
@@ -454,6 +455,32 @@
         rebuildTrendsFromState();
         if(activeTag) filterFeedByHashtag(activeTag);
       }
+      */
+      
+
+      function renderFromState(){
+        clearFeedDOM();
+
+        if(!stateTweets.length){
+          if(idle) idle.style.display = '';
+          return;
+        }
+
+        if(idle) idle.style.display = 'none';
+
+        // stateTweets is already sorted DESC (newest first)
+        for(const t of stateTweets){
+          const card = tweetCard(t);
+          feed.appendChild(card); // append keeps newest at top visually
+        }
+
+        rebuildTrendsFromState();
+        if(activeTag) filterFeedByHashtag(activeTag);
+      }
+
+
+
+      /* 
       function addTweetNow(t){
         // put into state/cache first so reloads are consistent
         addToStateAndCache([t]);
@@ -465,6 +492,25 @@
         updateTrendsUI();
         if(activeTag) filterFeedByHashtag(activeTag);
       }
+      */
+
+      function addTweetNow(t){
+        // ❗️Do not render if already present in DOM
+        if (feed.querySelector(`[data-tid="${t.id}"]`)) {
+          return;
+        }
+
+        addToStateAndCache([t]);
+        if(idle) idle.style.display='none';
+
+        const card = tweetCard(t);
+        feed.prepend(card);
+
+        registerHashtagsFromTweet(t);
+        updateTrendsUI();
+        if(activeTag) filterFeedByHashtag(activeTag);
+      }
+
 
       // ====== SSE ======
       function startSSE(){
