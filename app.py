@@ -980,4 +980,4 @@ if ENABLE_PMS and os.path.exists(PMS):
         app.logger.warning(f"Impossible de charger {PMS}: {e}")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=DEBUG)
