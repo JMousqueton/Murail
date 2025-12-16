@@ -59,6 +59,7 @@
       </div>
 
       <div class="row g-4">
+        {% if enable_pms %}
         <div class="col-12 col-md-6">
           <a href="{{ url_for('socialmedia') }}" target="_blank" class="text-decoration-none">
             <div class="card bg-dark border border-secondary h-100 shadow-sm hover-shadow">
@@ -70,6 +71,7 @@
             </div>
           </a>
         </div>
+        {% endif %}
 
         <div class="col-12 col-md-6">
           <a href="{{ url_for('messagerie') }}" target="_blank" class="text-decoration-none">
@@ -113,10 +115,19 @@
               <div class="card-body text-center">
                 <h2 class="h5 text-info"><i class="fa-solid fa-screwdriver-wrench"></i> {{ t('admin') }}</h2>
                 <p class="small text-secondary"><i class="fa-solid fa-lock"></i> {{ t('needs_password') }}</p>
-                {% if n_tweets > 0 and n_messages > 0 %}
+                {% if n_messages > 0 %}
                   <p class="mt-2">{{ t('scenario_loaded') }} <span class="badge bg-success">{{ t('loaded') }}</span></p>
                 {% else %}
                   <p class="mt-2">{{ t('scenario_loaded') }} <span class="badge bg-danger">{{ t('empty') }}</span></p>
+                {% endif %}
+                {% if enable_pms %}
+                  {% if n_tweets > 0 %}
+                    <p class="mt-2">{{ t('pms_loaded') }} <span class="badge bg-success">{{ t('pms_badge_loaded') }}</span></p>
+                  {% else %}
+                    <p class="mt-2">{{ t('pms_loaded') }} <span class="badge bg-danger">{{ t('pms_badge_empty') }}</span></p>
+                  {% endif %}
+                {% else %}
+                  <p class="mt-2">{{ t('pms_loaded') }} <span class="badge bg-secondary">{{ t('pms_disabled') }}</span></p>
                 {% endif %}
               </div>
             </div>

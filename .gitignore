@@ -202,9 +202,7 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
-# Marimo
-marimo/_static/
-marimo/_lsp/
-__marimo__/
 .DS_Store
 Sample/~$chronogramme.xlsx
+.github/copilot-instructions.md
+Sample/OLDchronogramme.xlsx

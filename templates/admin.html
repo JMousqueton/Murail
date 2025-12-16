@@ -74,10 +74,19 @@
 
     <!-- Upload Excel -->
     <form action="{{ url_for('admin') }}" method="post" enctype="multipart/form-data" class="mb-4">
-      <label class="form-label">{{ t('label_excel') }}</label>
+      <label class="form-label">{{ t('label_chronogramme') }}</label>
       <input type="file" name="file" class="form-control mb-2" accept=".xlsx,.xls" required>
       <button class="btn btn-primary">{{ t('btn_excel_upload') }}</button>
     </form>
+
+    {% if enable_pms %}
+    <!-- Upload PMS (Tweets) -->
+    <form action="{{ url_for('admin') }}" method="post" enctype="multipart/form-data" class="mb-4">
+      <label class="form-label">{{ t('label_pms') }}</label>
+      <input type="file" name="pms_file" class="form-control mb-2" accept=".xlsx,.xls" required>
+      <button class="btn btn-info">{{ t('btn_pms_upload') }}</button>
+    </form>
+    {% endif %}
 
     <!-- Upload Images -->
     <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data" class="mb-4">
@@ -92,6 +101,24 @@
       </div>
       <div class="col-sm-6">
         <div class="p-3 border rounded-3">{{ t('planned_messages') }} : <strong>{{ n_messages }}</strong></div>
+      </div>
+      <div class="col-sm-6">
+        {% if n_messages > 0 %}
+          <div class="p-3 border rounded-3">{{ t('scenario_loaded') }} <span class="badge bg-success">{{ t('loaded') }}</span></div>
+        {% else %}
+          <div class="p-3 border rounded-3">{{ t('scenario_loaded') }} <span class="badge bg-danger">{{ t('empty') }}</span></div>
+        {% endif %}
+      </div>
+      <div class="col-sm-6">
+        {% if enable_pms %}
+          {% if n_tweets > 0 %}
+            <div class="p-3 border rounded-3">{{ t('pms_loaded') }} <span class="badge bg-success">{{ t('pms_badge_loaded') }}</span></div>
+          {% else %}
+            <div class="p-3 border rounded-3">{{ t('pms_loaded') }} <span class="badge bg-danger">{{ t('pms_badge_empty') }}</span></div>
+          {% endif %}
+        {% else %}
+          <div class="p-3 border rounded-3">{{ t('pms_loaded') }} <span class="badge bg-secondary">{{ t('pms_disabled') }}</span></div>
+        {% endif %}
       </div>
     </div>
 

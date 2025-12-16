@@ -1,8 +1,22 @@
 # 📄 Documentation
 
-## ⚙️ Completing the Scenario Excel File
+## 📂 Excel File Structure
 
-This Excel file defines the **stimuli** that will be automatically triggered during the simulation (tweets, messages, or countdowns).
+The platform now uses **two separate Excel files**:
+
+### 1️⃣ Chronogramme (`chronogramme.xlsx`)
+This file contains **messages and countdown events**.
+
+### 2️⃣ PMS (`pms.xlsx`) — *Optional*
+This file contains **tweets** (social media).
+- ⚠️ Requires `ENABLE_PMS=true` in the `.env` file
+- If `ENABLE_PMS=false`, the social media module is disabled.
+
+---
+
+## ⚙️ Completing the Chronogramme File (`chronogramme.xlsx`)
+
+This Excel file defines the **messages** and **countdowns** that will be automatically triggered during the simulation.
 
 Each row corresponds to one event.
 
@@ -15,12 +29,12 @@ Each row corresponds to one event.
 - Used to identify and order messages.
 - Recommended format: **simple incremental numbering** (`001`, `002`, `003`, …).
 - Example: `001` for the first message, `002` for the second, etc.
-- **Note:** for tweets or countdowns, leave this cell empty.
+- **Note:** for countdowns, leave this cell empty.
 
 ---
 
-#### `Horaire`
-- Time when the event is triggered, in **HH:MM** format.
+#### `Horaire` (Time)
+- Time when the event is triggered, in **HH:MM** or **HH:MM:SS** format.
 - The current date is automatically used.
 - Example: `09:15` will trigger the event at 9:15 a.m. (Paris time).
 
@@ -28,45 +42,46 @@ Each row corresponds to one event.
 
 #### `Type`
 - Type of stimulus expected:
-  - `tweet` → post on the social media feed.
-  - `message` → message in the internal mailbox.
+  - `message` → arrival in the internal messaging system.
   - `decompte` → display of a countdown timer (duration in minutes defined in `Stimuli`).
+
+**Note:** Tweets are now managed in the separate **`pms.xlsx`** file.
 
 ---
 
 #### `Emetteur` (Sender)
-- **Required** for `tweet` and `message`.
+- **Required** for messages.
 - Name of the person or entity sending it.
-- Example: `Management`, `CISO`, `Le Monde Newspaper`.
-
-If `Emetteur` is set to `aléatoire` (random), a pseudonym will be randomly chosen from the `tweet.txt` file in the `static/data` directory.
-If an image file named `Emetteur.png` or `.jpg` exists in `static/images/tweet/`, it will be used as the avatar.
+- Example: `Management`, `CISO`, `Communication`.
 
 ---
 
 #### `Destinataire` (Recipient)
 - **Only for messages.**
-- Corresponds to the target role of the message:
+- Corresponds to the target role(s) of the message.
+- **Roles are dynamically extracted** from your recipients → no predefined list needed!
+- Common examples:
   - `Communication`
   - `Decision`
   - `IT`
   - `Legal / Finance`
   - `Human Resources`
   - `Business`
-  - or `All` for a general message.
+  - `All` → message for **all roles**.
+
+**💡 Multi-recipient support**: to send a message to multiple roles, list them on separate rows with the same `id`:
+
+| id  | Horaire | Type    | Emetteur | Destinataire | Stimuli        |
+|-----|---------|---------|----------|--------------|----------------|
+| 003 | 10:00   | message | CISO     | IT           | Server down    |
+| 003 | 10:00   | message | CISO     | Decision     | Server down    |
+
+⚠️ **Alternative**: you can also use a line break in the same Excel cell to list multiple recipients.
 
 ---
 
-#### `Stimuli`
+#### `Stimuli` (Content)
 - Content of the event.
-- For a `tweet` → tweet text (hashtags allowed).
-  - **Tip:** you can include an image using the syntax:
-    ```
-    [img filename.png]
-    ```
-    Images must be stored in the **`static/images/`** folder of the project.
-    👉 They can be **uploaded directly via the admin interface** (*Upload image* section).
-    Example: `New leak revealed! [img leak.png]`
 - For a `message` → email body text.
 - For a `decompte` → countdown duration in minutes (example: `15`).
 
@@ -74,7 +89,7 @@ If an image file named `Emetteur.png` or `.jpg` exists in `static/images/tweet/`
 
 ### 📝 Optional Columns
 
-These columns are intended for the **facilitator/animator** role only.
+These columns are intended for the **animator/facilitator** role only.
 
 #### `Réaction attendue` (Expected Reaction)
 - Indicates the desired response from participants.
@@ -89,35 +104,76 @@ These columns are intended for the **facilitator/animator** role only.
 
 ---
 
-### ✅ Example Table
+### ✅ Example Table (Chronogramme)
 
-| id   | Horaire | Type     | Emetteur      | Destinataire   | Stimuli                                   | Réaction attendue                  | Commentaire              | Livrable               |
-|------|----------|-----------|---------------|----------------|-------------------------------------------|------------------------------------|--------------------------|------------------------|
-|      | 09:00    | tweet     | News Journal  |                | #Cyberattack in progress! [img fuite.png]  | Analyze media impact               | First public tweet       |                        |
-| 001  | 09:05    | message   | CISO          | IT             | Incident detected on server X             | Isolate the server                 | Technical data           | Analysis report        |
-|      | 09:10    | decompte  |               |                | 15                                        | Wait for the countdown to end      | 15-min simulation pause  |                        |
-| 002  | 09:20    | message   | Management    | Communication  | Prepare an official statement             | Draft internal communication       | Check text consistency   | Internal statement     |
+| id   | Horaire | Type     | Emetteur      | Destinataire   | Stimuli                    | Expected Reaction              | Comment         | Deliverable       |
+|------|---------|----------|---------------|----------------|----------------------------|--------------------------------|------------------|--------------------|
+| 001  | 09:05   | message  | CISO          | IT             | Incident detected on server | Isolate the server             | Technical data   | Analysis report    |
+|      | 09:10   | decompte |               |                | 15                         | Wait for countdown to end      | 15-min pause     |                    |
+| 002  | 09:20   | message  | Management    | Communication  | Prepare official statement | Draft internal communication   | Check text       | Internal statement |
+| 003  | 09:30   | message  | CISO          | All            | Situation update at 9:30   | Direct briefing                |                  |                    |
+
+---
+
+## ⚙️ Completing the PMS File (`pms.xlsx`)
+
+This Excel file contains the **tweets** that will appear on the social media feed.
+
+**⚠️ Prerequisite:** `ENABLE_PMS=true` in the `.env` file
+
+### 🗂️ Mandatory Columns
+
+#### `Horaire` (Time)
+- Time when the tweet is published, in **HH:MM** or **HH:MM:SS** format.
+- Example: `09:15`
+
+#### `Emetteur` (Sender)
+- **Required**.
+- Simulated Twitter account (tweet author).
+- Example: `News Journal`, `ANSSI Official`, `@CyberDefense`.
+
+If `Emetteur` is set to `aléatoire` (random), a pseudonym will be randomly chosen from the `tweet.txt` file in the `static/data` directory.
+
+If an image file named `Emetteur.png` or `Emetteur.jpg` exists in `static/images/tweet/`, it will be used as the avatar.
+
+#### `Stimuli` (Content)
+- Tweet content (hashtags allowed).
+- **Tip: you can include an image** using the syntax:
+  ```
+  [img filename.png]
+  ```
+  Images must be stored in the **`static/images/`** folder.
+  👉 They can be **uploaded directly via the admin interface** (*Upload image* section).
+  
+  Example: `New leak revealed! [img leak.png]`
+
+### ✅ Example Table (PMS)
+
+| Horaire | Emetteur      | Stimuli                                   |
+|---------|---------------|-------------------------------------------|
+| 09:00   | News Journal  | #Cyberattack in progress! [img leak.png] |
+| 09:15   | @CyberDefense | Our experts are analyzing the situation  |
+| 09:30   | ANSSI         | Security alerts level 3                  |
 
 ---
 
 👉 With this structure, the simulation knows **what to trigger, when, and for whom**.
 
----
 
 ## 🖥️ User Interface
 
-The application offers several web interfaces that allow participants and facilitators to follow the exercise in real time.
+The application offers several web interfaces allowing participants and facilitators to monitor the exercise progress.
 
 ---
 
 ### 📌 Home Page (`/`)
 
-- **Global view** of the exercise.
+- **General view** of the exercise.
 - Displays:
-  - Links to the various interfaces (Social Media, Messaging, Observer, Administration).
+  - Access links to different interfaces (Social Media, Messaging, Observer, Administration).
   - Scenario status (loaded or empty).
-  - The **last 5 triggered events** (messages only).
-- Serves as the main entry point for participants.
+  - The **last 5 events** triggered (messages only).
+- Serves as the entry point for participants.
 
 ![Home](img/accueil.png)
 
@@ -127,11 +183,11 @@ The application offers several web interfaces that allow participants and facili
 
 - Simulates a **Twitter-like feed**.
 - Features:
-  - Displays **tweets** defined in the scenario.
-  - Supports **hashtags** → trends update in real time in the right column.
-  - Supports **images** using `[img name.png]`.
-  - Dynamic display of **retweet and like counts**, which increase automatically.
-  - Filter by active hashtag → clicking a trend topic filters the feed.
+  - Display of **tweets** scheduled in the scenario.
+  - **Hashtag** support → trends update in real-time in the right column.
+  - Ability to include **images** in tweets using the `[img name.png]` syntax.
+  - Dynamic display of **retweets and likes count**, which evolve automatically.
+  - Active hashtag filtering → clicking on a trending topic limits display to matching tweets.
 - A clock (Paris time) is visible in the top right.
 
 ![Social Media](img/mediassociaux.png)
@@ -140,45 +196,46 @@ The application offers several web interfaces that allow participants and facili
 
 ### ✉️ Messaging (`/messagerie`)
 
-- Simulates an **internal mailbox** (like Outlook or Webmail).
+- Simulates an **internal messaging system** (Outlook/Webmail-like).
 - Features:
-  - Each participant selects their **role** (Communication, Decision, IT, HR, etc.).
-  - The inbox displays only **messages addressed to that role**.
-  - Messages can be **opened and viewed**.
-  - Each message can be marked as **processed** ✅ (stored locally, persistent per role).
-  - History of the last 100 messages is loaded.
-  - Real-time updates via **SSE (Server-Sent Events)**.
+  - Each participant chooses their **role** (Communication, Decision, IT, HR, etc.).
+  - The inbox displays **messages addressed to that role**.
+  - Messages can be **opened and read**.
+  - Each message can be marked as **processed** ✅ (local storage, persistent per role).
+  - History of the last 100 messages is available on load.
+  - Real-time flow thanks to **SSE** (Server-Sent Events).
 
 ![Messaging](img/messagerie.png)
 
 ---
 
-### 🔎 Facilitator (`/animateur`)
+### 🔎 Animator (`/animateur`)
 
-- Restricted to **facilitators/controllers**.
-- Access protected by password (auto-filled in demo mode).
+- Reserved for **animators/controllers**.
+- Access via password (or pre-filled in demo mode).
 - Features:
-  - Overview of all **broadcasted messages**.
+  - Summary view of **messages distributed**.
   - The **last 5 messages**.
   - The **next 2 scheduled messages**.
-  - Displays **expected reactions** and **comments** from the Excel file.
+  - Display of **expected reactions** and **comments** defined in the Excel file.
 
-![Facilitator](img/animateur.png)
+![Animator](img/animateur.png)
 
 ---
 
 ### 👁️ Observer (`/observateur`)
 
-- Restricted to **observers/evaluators** (password required).
+- Reserved for **observers/evaluators**.
+- Access via password.
 - Features:
-  - Focused view of **stimuli (messages)** in the exercise.
-  - The **next message** appears at the top, greyed out until its time.
-  - **Past messages** are listed in reverse chronological order.
+  - Focused view on **exercise stimuli (messages)**.
+  - The **next message** is displayed at the top, grayed out and inactive until its scheduled time.
+  - **Past messages** appear in reverse chronological order (most recent first).
   - For each stimulus, the observer can:
-    - Give a **quick rating** (👍 / 👎).
-    - Add a **free-text comment**.
-  - Notes are **saved locally** in the browser.
-  - Option to **export** observations to **JSON** or **CSV** for analysis/debriefing.
+    - Give a **quick assessment** (👍 / 👎).
+    - Add a **free comment**.
+  - Notes are **automatically saved** locally (in browser).
+  - Ability to **export** observations in **JSON** or **CSV** for analysis and debriefing.
 
 ![Observer](img/observateur.png)
 
@@ -186,24 +243,27 @@ The application offers several web interfaces that allow participants and facili
 
 ### ⚙️ Administration (`/admin`)
 
-- Restricted to **facilitators** (password required).
+- Reserved for **administrators** (password required).
 - Features:
-  - **Load a scenario** (Excel file).
+  - **Load the Chronogramme** (Excel file with messages and countdowns).
+  - **Load the PMS** (Excel file with tweets) — optional if `ENABLE_PMS=true`.
   - View past and upcoming events.
-  - **Upload images** (usable in tweets via `[img name.png]`).
-  - Indicator showing whether a scenario is loaded.
+  - **Upload images** (that can be used in tweets via `[img name.png]`).
+  - Status indicators:
+    - ✅ Chronogramme loaded / ❌ Empty
+    - ✅ PMS loaded / ❌ Empty / ⊘ Disabled
 
-![Admin](img/admin.png)
+  ![Admin](img/admin.png)
 
 ---
 
 ### ⏳ Countdown
 
 - When the scenario contains a **`decompte`** stimulus:
-  - Player interfaces (Messaging and Social Media) automatically switch to a **full-screen countdown**.
-  - The home page also displays the timer.
-  - The timer appears with a red glow effect.
-  - When the countdown ends, the Messaging and Social Media interfaces return to normal automatically.
+  - Player interfaces (Messaging and Social Media) automatically switch to a **full-screen countdown page**.
+  - The home page also displays the countdown.
+  - The timer is displayed with a red glowing effect.
+  - After the countdown ends, the Messaging and Social Media interfaces return to normal automatically.
 
 ![Countdown](img/decompte.png)
 
@@ -211,30 +271,52 @@ The application offers several web interfaces that allow participants and facili
 
 ## ⚙️ `.env` File
 
-The `.env` file configures the application without modifying the code.
-It contains sensitive parameters (passwords, secrets, file paths).
+The `.env` file allows you to configure the application without modifying the code.
+It contains sensitive parameters (passwords, identifiers, secrets) and file paths.
 
-### Variable Details
+**👉 See [env.example](../env.example) for a detailed description of all variables.**
 
-- **`ADMIN_PASSWORD`** – Password for the **Administration** interface.
-- **`OBSERVER_PASSWORD`** – Password for the **Observer** interface.
-- **`ANIMATOR_PASSWORD`** – Password for the **Facilitator** interface.
-- **`APP_ID`** – Unique ID for the simulation instance (useful to separate environments).
-- **`FLASK_SECRET`** – Secret key used by Flask for managing user sessions (⚠️ must be unique and complex).
-- **`SCENARIO_XLSX`** – Path to the Excel file containing the **timeline** (default: `./Sample/chronogramme.xlsx`).
-- **`DEMO`** – If `true`, enables **demo mode** (Observer password auto-filled).
-- **`TRACKING`** – Optional analytics script (e.g., **Matomo**, Google Analytics).
-  - The content is injected at the bottom of each page (`{{ TRACKING | safe }}`).
-  - Example: internal Matomo tracking script.
+### Details of Main Variables
 
-👉 **Security tip:** never share the real `.env` content publicly (especially passwords or `FLASK_SECRET`).
+#### Authentication
+- **`ADMIN_PASSWORD`** : password to access the **Administration** interface.
+- **`ANIMATOR_PASSWORD`** : password to access the **Animator** interface.
+- **`OBSERVER_PASSWORD`** : password to access the **Observer** interface.
+
+#### Global Configuration
+- **`APP_ID`** : unique identifier for the simulation instance (useful for differentiating multiple environments).
+- **`FLASK_SECRET`** : secret key used by Flask to manage user sessions (⚠️ must be **unique and complex**).
+  - Generate a key: `python3 -c "import secrets; print(secrets.token_hex(32))"`
+- **`TZ`** : application timezone (default: `Europe/Paris`).
+- **`LANG`** : default language (default: `fr` for French, or `en` for English).
+- **`PORT`** : application listening port (default: `5000`).
+
+#### Scenario Files
+- **`CHRONOGRAMME_FILE`** : path to the Excel file with **messages and countdowns** (default: `Sample/chronogramme.xlsx`).
+- **`ENABLE_PMS`** : enables/disables the PMS module (tweets).
+  - `true` → module active, `false` → module disabled.
+- **`PMS_FILE`** : path to the Excel file with **tweets** (default: `Sample/pms.xlsx`, used if `ENABLE_PMS=true`).
+
+#### Mode and Debugging
+- **`DEBUG`** : enables Flask debug mode (⚠️ do not enable in production).
+- **`DEMO`** : enables **demo mode**.
+  - `true` → Animator and Observer passwords are pre-filled automatically.
+  - Admin is inaccessible.
+- **`TRACKING`** : allows adding an analytics tracking script (example: **Matomo**, Google Analytics…).
+   - Content is injected as-is at the bottom of each page.
+   - Typical example: a Matomo script hosted on an internal server.
+
+👉 **Security tip**: never share the actual content of the `.env` file publicly (especially passwords and `FLASK_SECRET`).
 
 ---
 
 ### 🧪 Demo Mode
 
-- A demo instance is available:
+- A demonstration instance is available at:
   👉 [https://murail-demo.mousqueton.io](https://murail-demo.mousqueton.io)
-- In this mode:
-  - The Observer password is auto-filled.
-  - Allows easy testing without local setup.
+- In this mode (`DEMO=true`):
+  - The **Animator** password is pre-filled automatically.
+  - The **Observer** password is pre-filled automatically.
+  - **Admin** access is **disabled**.
+  - Other features (Messaging, Social Media) remain accessible.
+  - Allows easy testing of the interface without local configuration.

@@ -239,7 +239,7 @@
             <div>
               <span class="badge bg-success">${escapeHtml(m.emetteur||'')}</span>
               &nbsp;→&nbsp;
-              <span class="badge bg-danger ms-2">${roleWithIconHTML(m.destinataire||'')}</span>
+              <span class="ms-2">${(m.destinataire||'').split('\n').map(d => `<span class="badge bg-danger">${roleWithIconHTML(d)}</span>`).join(' ')}</span>
             </div>
             <span class="status-badge">${renderProcessedBadge(processed)}</span>
           </div>
@@ -265,7 +265,7 @@
             <div id="detail-processed-badge">${renderProcessedBadge(processed)}</div>
           </div>
           <div class="mb-1"><span class="badge bg-success">{{ t('sender') }}</span> ${escapeHtml(m.emetteur||'')}</div>
-          <div class="mb-1"><span class="badge bg-danger">{{ t('recipient') }}</span> ${roleWithIconHTML(m.destinataire||'')}</div>
+          <div class="mb-1"><span class="badge bg-danger">{{ t('recipient') }}</span> ${(m.destinataire||'').split('\n').map(d => `${roleWithIconHTML(d)}`).join(', ')}</div>
           <div class="mb-2"><strong>{{ t('delivery_time') }}</strong> ${when}</div>
 
           <div class="form-check form-switch my-2">

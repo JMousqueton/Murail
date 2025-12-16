@@ -1,7 +1,9 @@
-# Mur@il
-Crisis simulation platform inspired by the large-scale **REMPAR25** exercise organized by **ANSSI**
+➡️ [Lire cette documentation en français](README.md)
 
-# Crisis Simulation – Exercise inspired by REMPAR25
+# Mur@il
+Crisis simulation platform inspired by the **REMPAR25** exercise by **ANSSI**
+
+# Crisis Simulation – Exercise Inspired by REMPAR25
 
 ## 📌 Context
 
@@ -33,7 +35,8 @@ It can be used for trainings, role-playing sessions, or crisis management exerci
 - Role-based access for messaging (Communication, Decision, IT, HR, Legal/Finance, etc.).
 
 ### 📊 Administration
-- Upload the scenario Excel file (`scenario.xlsx`).
+- Upload scenario Excel file (`chronogramme.xlsx`).
+- Upload social media Excel file (`PMS.xlsx`).
 - View past events and upcoming messages/tweets.
 - Monitor the total number of tweets and messages.
 
@@ -47,57 +50,94 @@ It can be used for trainings, role-playing sessions, or crisis management exerci
 ### ✉️ Internal Messaging
 - **Webmail** view with user role selection.
 - Messages appear over time depending on the selected role.
-- Includes a **“All” mode** for messages addressed to all roles.
-- Each user can mark messages as **“Processed”** (locally stored in their browser, no global effect).
+- Includes an **"All" mode** for messages addressed to all roles.
+- Each user can mark a message as **"Processed"** (stored locally in browser, no impact on other users).
 
 ### 🪄 Animator
 - Password-protected access.
-- Timeline showing only **messages** (not tweets).
+- Timeline displaying **messages only** (no tweets).
 - For each message:
   - Stimulus ID highlighted (yellow badge).
-  - Scheduled time of delivery.
-  - Associated **Expected Reaction** (🔎) and **Comment** (📝).
-- Allows real-time follow-up and evaluation of reactions.
+  - Delivery time.
+  - **Expected reaction** (🔎) and **Comment** (📝).
+- View to monitor the exercise in real time and evaluate team reactions.
 
 ### 👁️ Observer
 - Password-protected access.
-- Timeline showing only **messages** (not tweets).
-- For each message, the observer can rate the crisis team’s reaction with a thumbs up 👍 or down 👎 and add a comment.  
-- Entered data is stored locally in the observer’s browser.  
+- Timeline displaying **messages only** (no tweets).
+- For each message, the observer can note the crisis team's reaction with thumbs up 👍 or down 👎 and add a comment.
+- Information is stored locally in the browser.
 - Export in JSON or CSV format.
 
 ---
 
-## 📂 Scenario Structure (Excel)
+## 📂 Scenario File Structure (Excel)
 
-The Excel file must contain at least the following columns:
+The platform uses **two separate Excel files**:
 
-- `id`: unique stimulus identifier (for messages).  
-- `horaire`: broadcast time (`HH:MM` format).  
-- `type`: `tweet` or `message`.  
-- `emetteur`: sender of the message/tweet.  
-- `destinataire`: target role (or `tous` for general broadcast).  
-- `stimuli`: message or tweet content.  
-- `reaction attendue` *(optional)*: expected reaction from the team.  
-- `commentaire` *(optional)*: note for the facilitator.  
-- `livrable` *(optional)*: expected output (press release, report, etc.).  
+### 1. **Chronogramme** (messages and events)
+The Excel file `chronogramme.xlsx` must contain at least the following columns:
+
+- `id` : unique stimulus identifier (for messages).
+- `horaire` : delivery time (format `HH:MM` or `HH:MM:SS`).
+- `type` : `message` or `decompte`.
+- `emetteur` : message author.
+- `destinataire` : recipient role(s) (or `tous` for broadcast). *Support for multi-recipient messages with line breaks.*
+- `stimuli` : message content.
+- `reaction attendue` *(optional)* : expected team response.
+- `commentaire` *(optional)* : note for the animator.
+- `livrable` *(optional)* : expected deliverable (press release, report, etc.).
+
+**Supported types:**
+- `message` : internal message sent to designated roles.
+- `decompte` : countdown window (real-time counter for the exercise).
+
+### 2. **PMS** (tweets) — *Optional, requires `ENABLE_PMS=true`*
+The Excel file `pms.xlsx` must contain at least the following columns:
+
+- `horaire` : delivery time (format `HH:MM` or `HH:MM:SS`).
+- `emetteur` : tweet author (simulated Twitter account).
+- `stimuli` : tweet content.
 
 ---
 
-## 📖 Documentation
+## �� What's New (Latest Update)
 
-A complete documentation in english explaining how to configure and prepare the Excel scenario file is available here:  
+### Improved Architecture
+- **Separation of sources**: tweets and messages loadable from separate Excel files.
+- **Dynamic role extraction**: roles are automatically extracted from message recipients.
+- **Multi-recipient support**: a message can be addressed to multiple roles (with line breaks in CSV).
+
+### Administration Interface
+- Simplified interface with separate uploads for:
+  - **Chronogramme** (messages + countdowns)
+  - **PMS** (tweets) — optional, requires activation
+- Load status display for each module.
+
+### Timestamp Management
+- Better handling of Excel formats and timezones.
+- Automatic support for variable time formats (`HH:MM`, `HH:MM:SS`, etc.).
+
+### Technical Improvements
+- Pinned dependency versions (`requirements.txt`)
+- Improved locking mechanism (threading) for shared structures.
+- Complete i18n support with translations for new keys.
+- No-cache headers to prevent SSE caching issues.
+
+---
+
+Complete documentation explaining how the platform works and how to prepare Excel files is available here:  
 ➡️ [Documentation/Documentation-en.md](Documentation/Documentation-en.md)
 
 ---
 
 ## 🚀 Installation
 
-### 1. Requirements
+### 1. Prerequisites
 - Python **3.9+**
 - Pip and virtualenv
 
-### 2. Local installation
+### 2. Local Installation
 ```bash
 git clone https://github.com/jmousqueton/murail.git
 cd murail
@@ -106,65 +146,99 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+**Dependencies** (recommended versions):
+- Flask==3.1.2
+- pandas==2.3.3
+- openpyxl==3.1.5
+- python-dateutil==2.9.0.post0
+- python-dotenv==1.2.1
+- Unidecode==1.4.0
+
 ### 3. Configuration
-Create a `.env` file with the required variables:
+
+Copy the example configuration file and adapt it:
+```bash
+cp env.example .env
+```
+
+Edit the `.env` file and fill in the required variables. See [env.example](env.example) for a detailed description of each variable.
+
+**Main variables:**
+
 ```env
+# Authentication (recommended: use different passwords)
 ADMIN_PASSWORD=MyAdminPassword
 ANIMATOR_PASSWORD=MyAnimatorPassword
 OBSERVER_PASSWORD=MyObserverPassword
+
+# Configuration
 APP_ID=SIM-MURAIL
-FLASK_SECRET=my-ultra-secret-key
-TZ=Europe/Paris
+FLASK_SECRET=my-long-secret-key                # Generate: python3 -c "import secrets; print(secrets.token_hex(32))"
+TZ=Europe/Paris                                # Timezone (e.g: Europe/Paris, UTC)
+LANG=en                                        # Default language (fr or en)
+
+# Scenario files
+CHRONOGRAMME_FILE=Sample/chronogramme.xlsx     # Messages and countdowns
+ENABLE_PMS=true                                # Enable PMS module (tweets)
+PMS_FILE=Sample/pms.xlsx                       # Tweets (requires ENABLE_PMS=true)
+
+# Optional
+DEBUG=false                                    # Flask debug mode (do not enable in production)
+DEMO=false                                     # Demo mode (bypass auth for demonstration)
+TRACKING=                                      # Analytics code (e.g. Google Analytics)
+PORT=5000                                      # Listen port (default: 5000)
 ```
 
-### 4. Launch the application
+**For more details**, see [env.example](env.example) which contains explanations for each variable.
+
+### 4. Launch the Application
 ```bash
 python app.py
 ```
 
-The application will then be available at [http://localhost:5000](http://localhost:5000).
+The application is then available at [http://localhost:5000](http://localhost:5000).
 
 ---
 
 ## 👥 Target Audience
 
-- **Crisis exercise organizers** (CISO, CIO, trainers).  
-- **Communication, Legal, HR, Finance, Technical teams** during training.  
-- **Facilitators** evaluating reaction and coordination.
+- **Crisis exercise organizers** (CISOs, IT Directors, trainers).
+- **Communication, Legal, HR, Finance, and Technical teams** during training.
+- **Animators** responsible for evaluating team reaction and coordination.
 
 ---
 
-## 💻 Online Demo
+## Online Demo
 
-A demo instance is available at:  
+A demonstration instance is available at:  
 👉 [https://murail-demo.mousqueton.io](https://murail-demo.mousqueton.io)
 
 In demo mode:
 
-- **Animator** access requires no password.  
-- **Observer** access requires no password.  
-- **Administrator** access is disabled.  
-- Other features (Messaging, Social Media) remain accessible for testing scenarios.  
-- This mode is intended solely for demonstration purposes.
+- **Animator** access does not require a password.
+- **Observer** access does not require a password.
+- **Admin** access is not available.
+- Other features (Messaging, Social Media) remain accessible to test the scenario.
+- This mode is designed for discovery purposes only.
 
 ---
 
-## 🚀 To-Do List
+## 🚀 Todo
 
-- [ ] Add **light/dark mode** (preference saved in browser).  
-- [ ] Allow publishing of user tweets (limited to communication role).  
-- [ ] Generate a PDF from **observer** feedback.  
+- [ ] Add a **light/dark mode** (preference saved in browser)
+- [ ] Ability to publish custom tweets (limited to communications role)
+- [ ] Generate a PDF from **observer** notes
 
 ---
 
 ## 📜 License
 
-Project distributed under **GNU License**.  
+Project distributed under GNU license.  
 ⚠️ This project is intended for **training and simulation purposes only**.
 
 ---
 
 ## 🙏 Acknowledgments
 
-- **ANSSI** for organizing **REMPAR25**, which inspired this platform.  
-- All contributors who enhance large-scale cybersecurity exercises.
+- **ANSSI** for organizing **REMPAR25**, which inspired this platform.
+- All contributors who enrich large-scale cybersecurity exercises.

@@ -52,7 +52,10 @@
 
   "h_admin": "Administration",
   "label_excel": "Fichier Excel",
+  "label_chronogramme": "Chronogramme",
   "btn_excel_upload": "Charger",
+  "label_pms": "Fichier PMS (Tweets)",
+  "btn_pms_upload": "Charger PMS",
   "label_image": "Uploader une image (.png, .jpg, .jpeg, .gif)",
   "btn_image_upload": "Uploader",
 
@@ -65,6 +68,10 @@
   "badge_facilitator_mode": "Mode Animateur",
   "scenario_loaded_badge": "Scénario chargé",
   "scenario_empty_badge": "Scénario vide",
+  "pms_loaded": "PMS",
+  "pms_badge_loaded": "chargé",
+  "pms_badge_empty": "vide",
+  "pms_disabled": "désactivé",
 
   "h_timeline_msgs_only": "Timeline (messages uniquement)",
   "aria_realtime_clock": "Horloge temps réel",

@@ -32,19 +32,18 @@ import json
 load_dotenv()
 
 
-ROLES = [
-    "Communication", "Décision", "Informatique",
-    "Juridique / Finance", "Ressources Humaines",
-    "Métier"
-]
+# ROLES will be populated dynamically from CHRONOGRAMME after loading
+ROLES: List[str] = []
 
-DATA_PATH = os.environ.get("SCENARIO_XLSX", os.path.join("Sample", "chronogramme.xlsx"))
+PMS = os.environ.get("PMS_FILE", os.path.join("Sample", "pms.xlsx"))
+CHRONOGRAMME = os.environ.get("CHRONOGRAMME_FILE", os.path.join("Sample", "chronogramme.xlsx"))
 ADMIN_PASSWORD     = os.environ.get("ADMIN_PASSWORD", "changeme_admin")
 ANIMATOR_PASSWORD  = os.environ.get("ANIMATOR_PASSWORD", "changeme_animator")
 OBSERVER_PASSWORD  = os.environ.get("OBSERVER_PASSWORD", "changeme_observer")
 APP_ID             = os.environ.get("APP_ID", "REMPAR-DEMO-LOCAL")
 TRACKING           = os.environ.get("TRACKING", "")
 DEBUG           = os.environ.get("DEBUG", "False")
+ENABLE_PMS = os.environ.get("ENABLE_PMS", "false").strip().lower() in ("1", "true", "yes", "on")
 TZ = os.getenv("TZ", "Europe/Paris")
 APP_TZ = gettz(TZ)
 
@@ -70,7 +69,7 @@ DECOMPTE_EVENTS: List[Dict[str, Any]] = []  # {start: datetime, end: datetime, m
 
 I18N_DIR = Path(__file__).parent / "i18n"
 SUPPORTED_LANGS = {"fr", "en"}
-DEFAULT_LANG = "fr"
+DEFAULT_LANG = os.getenv("LANG", "fr").lower()
 
 def detect_lang_from_header() -> str:
     header = (request.headers.get("Accept-Language") or "").lower()
@@ -138,6 +137,13 @@ def set_lang(lang):
 def inject_globals():
     return dict(TZ=TZ)
 
+@app.after_request
+def add_no_cache_headers(response):
+    """Add no-cache headers to all responses."""
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 def get_active_decompte_end(now: Optional[datetime] = None) -> Optional[datetime]:
     """If a decompte is active (start <= now < end) return its end datetime, else None."""
@@ -251,7 +257,65 @@ def upload_image():
 def inject_tracking():
     return dict(TRACKING=TRACKING)
 
+def extract_roles_from_messages() -> None:
+    """Extract unique, non-empty destinataires from MESSAGES and sort alphabetically."""
+    global ROLES
+    with STATE_LOCK:
+        roles_set = set()
+        for m in MESSAGES:
+            dest = m.get("destinataire", "").strip()
+            if dest:
+                # Split by newline and add each as a separate role
+                for role in dest.split('\n'):
+                    role = role.strip()
+                    if role and role.lower() != "tous":  # Exclude empty and "tous" (broadcast)
+                        roles_set.add(role)
+        ROLES = sorted(list(roles_set))
+    app.logger.info(f"ROLES extracted: {ROLES} ({len(ROLES)} roles found)")
+
+@app.context_processor
+def inject_tracking():
+    return dict(TRACKING=TRACKING)
+
+def load_pms(file_like) -> None:
+    """Load tweets from PMS file."""
+    df = pd.read_excel(file_like, engine="openpyxl")
+    if df.empty:
+        raise ValueError("Fichier PMS vide")
+
+    cols = {unidecode(c).strip().lower(): c for c in df.columns}
+    required = ["horaire", "emetteur", "stimuli"]
+    missing = [k for k in required if k not in cols]
+    if missing:
+        raise ValueError(f"Colonnes manquantes dans DPS: {', '.join(missing)}")
+
+    tweets: List[Dict[str, Any]] = []
+
+    for idx, row in df.iterrows():
+        try:
+            when = parse_horaire(row[cols["horaire"]])
+            emet = row[cols["emetteur"]]
+            stim = row[cols["stimuli"]]
+
+            tid = f"tw-{int(when.timestamp())}-{idx}"
+            tweets.append({
+                "id": tid,
+                "at": when,
+                "emetteur": str(emet).strip() if pd.notna(emet) else "Anonyme",
+                "texte": str(stim).strip() if pd.notna(stim) else "",
+            })
+
+        except Exception as e:
+            raise ValueError(f"PMS Ligne {idx+2}: {e}")
+
+    tweets.sort(key=lambda r: r["at"])
+
+    with STATE_LOCK:
+        TWEETS.clear(); TWEETS.extend(tweets)
+        SENT_TWEET_IDS.clear()
+
 def load_excel(file_like) -> None:
+    """Load Chronogramme (messages, decompte, raw events)."""
     df = pd.read_excel(file_like, engine="openpyxl")
     if df.empty:
         raise ValueError("Fichier Excel vide")
@@ -262,16 +326,15 @@ def load_excel(file_like) -> None:
     if missing:
         raise ValueError(f"Colonnes manquantes: {', '.join(missing)}")
 
-    tweets: List[Dict[str, Any]] = []
     messages: List[Dict[str, Any]] = []
     raw_rows: List[Dict[str, Any]] = []
-    decompte_events: List[Dict[str, Any]] = []  # NEW
+    decompte_events: List[Dict[str, Any]] = []
 
     for idx, row in df.iterrows():
         try:
             typ = norm(row[cols["type"]]).lower()
-            # Accept 'tweet', 'message', 'decompte'
-            if typ not in {"tweet", "message", "decompte"}:
+            # Accept 'message', 'decompte' (skip 'tweet')
+            if typ not in {"message", "decompte"}:
                 continue
 
             when = parse_horaire(row[cols["horaire"]])
@@ -280,7 +343,7 @@ def load_excel(file_like) -> None:
 
             # Keep raw row for animator
             raw = {
-                "id": (str(row[cols["id"]]).strip() if "id" in cols and pd.notna(row[cols["id"]]) else ""),
+                "id": (str(int(row[cols["id"]])).strip() if "id" in cols and pd.notna(row[cols["id"]]) else ""),
                 "horaire": row[cols["horaire"]],
                 "type": typ,
                 "Emetteur": (str(emet).strip() if pd.notna(emet) else ""),
@@ -292,16 +355,6 @@ def load_excel(file_like) -> None:
                 "_at": when,
             }
             raw_rows.append(raw)
-
-            if typ == "tweet":
-                tid = f"tw-{int(when.timestamp())}-{idx}"
-                tweets.append({
-                    "id": tid,
-                    "at": when,
-                    "emetteur": str(emet).strip() if pd.notna(emet) else "Anonyme",
-                    "texte": str(stim).strip() if pd.notna(stim) else "",
-                })
-                continue
 
             if typ == "message":
                 mid = raw["id"] or f"msg-{int(when.timestamp())}-{idx}"
@@ -338,17 +391,15 @@ def load_excel(file_like) -> None:
         except Exception as e:
             raise ValueError(f"Ligne {idx+2}: {e}")
 
-    tweets.sort(key=lambda r: r["at"])
     messages.sort(key=lambda r: r["at"])
     raw_rows.sort(key=lambda r: r["_at"])
     decompte_events.sort(key=lambda r: r["start"])
 
     with STATE_LOCK:
-        TWEETS.clear(); TWEETS.extend(tweets)
         MESSAGES.clear(); MESSAGES.extend(messages)
         RAW_ROWS.clear(); RAW_ROWS.extend(raw_rows)
-        DECOMPTE_EVENTS.clear(); DECOMPTE_EVENTS.extend(decompte_events)  # NEW
-        SENT_TWEET_IDS.clear(); SENT_MESSAGE_IDS.clear()
+        DECOMPTE_EVENTS.clear(); DECOMPTE_EVENTS.extend(decompte_events)
+        SENT_MESSAGE_IDS.clear()
 
 @app.route("/animateur", methods=["GET", "POST"])
 def animateur():
@@ -470,7 +521,8 @@ def index():
     return render_template(
         "index.html",
         n_tweets=n_tw, n_messages=n_msg,
-        past5=past5
+        past5=past5,
+        enable_pms=ENABLE_PMS
     )
 
 @app.route("/admin", methods=["GET", "POST"])
@@ -487,15 +539,28 @@ def admin():
         return render_template("admin_login.html")
 
     if request.method == "POST":
+        # Handle Chronogramme upload
         f = request.files.get("file")
-        if not f or not f.filename.lower().endswith((".xlsx", ".xls")):
-            flash("Veuillez sélectionner un fichier Excel (.xlsx/.xls)")
+        if f and f.filename and f.filename.lower().endswith((".xlsx", ".xls")):
+            try:
+                load_excel(f)
+                extract_roles_from_messages()  # Extract roles after loading
+                flash("Chronogramme chargé avec succès.")
+            except Exception as e:
+                flash(f"Erreur de chargement Chronogramme: {e}")
             return redirect(url_for("admin"))
-        try:
-            load_excel(f)
-            flash("Fichier chargé avec succès.")
-        except Exception as e:
-            flash(f"Erreur de chargement : {e}")
+        
+        # Handle PMS upload
+        pms_f = request.files.get("pms_file")
+        if pms_f and pms_f.filename and pms_f.filename.lower().endswith((".xlsx", ".xls")):
+            try:
+                load_pms(pms_f)
+                flash("PMS chargé avec succès.")
+            except Exception as e:
+                flash(f"Erreur de chargement PMS: {e}")
+            return redirect(url_for("admin"))
+        
+        flash("Veuillez sélectionner un fichier Excel (.xlsx/.xls)")
         return redirect(url_for("admin"))
 
     with STATE_LOCK:
@@ -517,7 +582,8 @@ def admin():
 
     return render_template("admin.html",
                            n_tweets=n_tw, n_messages=n_msg,
-                           past5=past5, next1=next1, next2=next2)
+                           past5=past5, next1=next1, next2=next2,
+                           enable_pms=ENABLE_PMS)
 
 @app.route("/socialmedia")
 def socialmedia():
@@ -738,7 +804,16 @@ def stream_messages():
 
     def is_for_role(m, role):
         dest = (m.get("destinataire") or "").strip()
-        return (not role) or dest == role or dest.casefold() == "tous"
+        if not role:
+            return True
+        if dest.casefold() == "tous":
+            return True
+        # Handle multiple destinataires separated by newline
+        for d in dest.split('\n'):
+            d = d.strip()
+            if d == role:
+                return True
+        return False
 
     def gen():
         yield "event: ping\ndata: {}\n\n"
@@ -883,13 +958,26 @@ def messagerie_change():
     session.pop("role", None)
     return redirect(url_for("messagerie"))
 
-os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
-if os.path.exists(DATA_PATH):
+os.makedirs(os.path.dirname(CHRONOGRAMME), exist_ok=True)
+if ENABLE_PMS:
+    os.makedirs(os.path.dirname(PMS), exist_ok=True)
+
+# Load Chronogramme (messages, decompte, raw events)
+if os.path.exists(CHRONOGRAMME):
     try:
-        with open(DATA_PATH, 'rb') as f:
+        with open(CHRONOGRAMME, 'rb') as f:
             load_excel(f)
+        extract_roles_from_messages()  # Extract roles after loading
     except Exception as e:
-        app.logger.warning(f"Impossible de charger {DATA_PATH}: {e}")
+        app.logger.warning(f"Impossible de charger {CHRONOGRAMME}: {e}")
+
+# Load PMS (tweets) - only if ENABLE_PMS is True
+if ENABLE_PMS and os.path.exists(PMS):
+    try:
+        with open(PMS, 'rb') as f:
+            load_pms(f)
+    except Exception as e:
+        app.logger.warning(f"Impossible de charger {PMS}: {e}")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=DEBUG)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
