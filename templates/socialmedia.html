@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr" data-bs-theme="dark">
+<html lang="{{ t('html_lang') }}" data-bs-theme="dark">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -406,8 +406,8 @@
 
       async function loadTweeterNames(){
         try{
-          let resp = await fetch('/static/data/tweeter.txt', { cache: 'no-store' });
-          if(!resp.ok) resp = await fetch('/data/tweeter.txt', { cache: 'no-store' });
+          let resp = await fetch('/static/data/tweeter-{{ t('html_lang') }}.txt', { cache: 'no-store' });
+          if(!resp.ok) resp = await fetch('/data/tweeter-{{ t('html_lang') }}.txt', { cache: 'no-store' });
           const txt = await resp.text();
           tweeterNames = txt.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
         }catch(e){
