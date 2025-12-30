@@ -200,6 +200,87 @@ The application is then available at [http://localhost:5000](http://localhost:50
 
 ---
 
+## 🐳 Docker Deployment
+
+### Option 1: Docker Compose (recommended)
+
+The easiest way to deploy Murail:
+
+```bash
+# 1. Create a .env file with your configuration
+cp env.example .env
+# Edit .env and configure your passwords and settings
+
+# 2. Launch the application
+docker-compose up -d
+
+# 3. View logs
+docker-compose logs -f
+
+# 4. Stop the application
+docker-compose down
+```
+
+The application will be accessible at [http://localhost:5000](http://localhost:5000).
+
+### Option 2: Docker Only
+
+```bash
+# 1. Build the image
+docker build -t murail:latest .
+
+# 2. Run the container
+docker run -d \
+  --name murail-app \
+  -p 5000:5000 \
+  -e ADMIN_PASSWORD=yourpassword \
+  -e ANIMATOR_PASSWORD=yourpassword2 \
+  -e OBSERVER_PASSWORD=yourpassword3 \
+  -e FLASK_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))") \
+  -v $(pwd)/Sample:/app/Sample:ro \
+  murail:latest
+```
+
+### Custom Scenarios with Docker
+
+To use your own Excel files:
+
+```bash
+# Place your files in ./custom-scenarios/
+docker-compose up -d
+
+# Or with docker run:
+docker run -d \
+  -p 5000:5000 \
+  -v $(pwd)/custom-scenarios:/app/custom-scenarios:ro \
+  -e CHRONOGRAMME_FILE=/app/custom-scenarios/my-scenario.xlsx \
+  murail:latest
+```
+
+### Health Check
+
+Check container health:
+
+```bash
+# Via Docker
+docker inspect --format='{{.State.Health.Status}}' murail-app
+
+# Via HTTP
+curl http://localhost:5000/health
+```
+
+### Production
+
+For production deployment, consider:
+
+- Use a reverse proxy (nginx, Traefik)
+- Enable HTTPS with Let's Encrypt
+- Configure strong passwords
+- Disable `DEBUG=false` and `DEMO=false`
+- Limit network access with firewall rules
+
+---
+
 ## 👥 Target Audience
 
 - **Crisis exercise organizers** (CISOs, IT Directors, trainers).

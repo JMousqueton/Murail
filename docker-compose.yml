@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  murail:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: murail:latest
+    container_name: murail-app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-5000}:5000"
+    environment:
+      # Authentication
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme_admin}
+      - ANIMATOR_PASSWORD=${ANIMATOR_PASSWORD:-changeme_animator}
+      - OBSERVER_PASSWORD=${OBSERVER_PASSWORD:-changeme_observer}
+      
+      # Application
+      - FLASK_SECRET=${FLASK_SECRET:-dev-secret-change-me}
+      - APP_ID=${APP_ID:-REMPAR-DOCKER}
+      - TZ=${TZ:-Europe/Paris}
+      - LANG=${LANG:-fr}
+      - DEBUG=${DEBUG:-False}
+      - DEMO=${DEMO:-false}
+      
+      # Features
+      - ENABLE_PMS=${ENABLE_PMS:-false}
+      
+      # Tracking (optional)
+      - TRACKING=${TRACKING:-}
+      
+      # File paths (default to Sample/ directory)
+      - CHRONOGRAMME_FILE=${CHRONOGRAMME_FILE:-Sample/chronogramme.xlsx}
+      - PMS_FILE=${PMS_FILE:-Sample/PMS.xlsx}
+    
+    volumes:
+      # Mount scenario files (optional - for custom scenarios)
+      - ./Sample:/app/Sample:ro
+      # Mount for uploaded images persistence
+      - murail-images:/app/static/images
+      # Optional: mount custom scenarios from host
+      # - ./custom-scenarios:/app/custom-scenarios:ro
+    
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health').read()"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    
+    networks:
+      - murail-network
+    
+    labels:
+      - "com.murail.description=Crisis Exercise Simulation Platform"
+      - "com.murail.version=1.0"
+
+volumes:
+  murail-images:
+    driver: local
+
+networks:
+  murail-network:
+    driver: bridge

@@ -958,6 +958,27 @@ def messagerie_change():
     session.pop("role", None)
     return redirect(url_for("messagerie"))
 
+@app.route("/health")
+def health():
+    """Health check endpoint for Docker and load balancers."""
+    with STATE_LOCK:
+        n_tweets = len(TWEETS)
+        n_messages = len(MESSAGES)
+    
+    status = {
+        "status": "healthy",
+        "timestamp": datetime.now(tz=APP_TZ).isoformat(),
+        "app_id": APP_ID,
+        "tweets_loaded": n_tweets,
+        "messages_loaded": n_messages,
+        "timezone": TZ,
+    }
+    return app.response_class(
+        app.json.dumps(status),
+        mimetype="application/json",
+        status=200
+    )
+
 os.makedirs(os.path.dirname(CHRONOGRAMME), exist_ok=True)
 if ENABLE_PMS:
     os.makedirs(os.path.dirname(PMS), exist_ok=True)
